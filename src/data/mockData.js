@@ -6,7 +6,7 @@ export const users = [
         accountNumber: 'PK12BOKK12345678901234',
         balance: 500000,
         email: 'aroobakhan@innovarge.com',
-        fpin: '1234'
+        otp: '123456'
     },
     {
         userId: 'tasawur',
@@ -15,7 +15,7 @@ export const users = [
         accountNumber: 'PK99BOKK98765432109876',
         balance: 10000000,
         email: 'tasawur@kuickpay.com',
-        fpin: '1234'
+        otp: '123456'
     }
 ];
 

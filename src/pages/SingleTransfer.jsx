@@ -29,10 +29,10 @@ const SingleTransfer = ({ user, setUser, transactions, setTransactions }) => {
     const [error, setError] = useState('');
     const [openErrorDialog, setOpenErrorDialog] = useState(false);
 
-    // FPIN & Confirmation State
+    // OTP & Confirmation State
     const [openConfirm, setOpenConfirm] = useState(false);
-    const [fpinInput, setFpinInput] = useState('');
-    const [fpinError, setFpinError] = useState('');
+    const [otpInput, setOtpInput] = useState('');
+    const [otpError, setOtpError] = useState('');
 
     const [success, setSuccess] = useState(false);
 
@@ -53,15 +53,15 @@ const SingleTransfer = ({ user, setUser, transactions, setTransactions }) => {
             return;
         }
         setError('');
-        setFpinInput('');
-        setFpinError('');
+        setOtpInput('');
+        setOtpError('');
         setOpenConfirm(true);
     };
 
     const confirmTransfer = () => {
-        // Validate FPIN
-        if (fpinInput !== user.fpin) {
-            setFpinError('Invalid FPIN code.');
+        // Validate OTP
+        if (otpInput !== user.otp) {
+            setOtpError('Invalid OTP code.');
             return;
         }
 
@@ -200,23 +200,24 @@ const SingleTransfer = ({ user, setUser, transactions, setTransactions }) => {
                     </DialogContentText>
 
                     <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <FormLabel>Enter 4-Digit FPIN</FormLabel>
+                        <FormLabel>Enter 6-Digit OTP</FormLabel>
                         <Box sx={{ mt: 1, mb: 2 }}>
                             <PinInput
+                                length={6}
                                 onChange={(val) => {
-                                    setFpinInput(val);
-                                    setFpinError('');
+                                    setOtpInput(val);
+                                    setOtpError('');
                                 }}
-                                error={!!fpinError}
+                                error={!!otpError}
                             />
                         </Box>
-                        {fpinError && (
+                        {otpError && (
                             <Typography variant="caption" color="error" sx={{ mb: 1 }}>
-                                {fpinError}
+                                {otpError}
                             </Typography>
                         )}
                         <Typography variant="caption" color="text.secondary" align="center" display="block">
-                            Enter the FPIN code associated with your account.
+                            Enter the OTP code sent to your registered mobile number.
                         </Typography>
                     </Box>
                 </DialogContent>

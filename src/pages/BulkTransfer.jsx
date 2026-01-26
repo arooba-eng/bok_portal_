@@ -26,6 +26,9 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import * as XLSX from 'xlsx';
 import PinInput from '../components/PinInput';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import DownloadIcon from '@mui/icons-material/Download';
 
 const BulkTransfer = ({ user, setUser, transactions, setTransactions }) => {
     const navigate = useNavigate();
@@ -35,11 +38,12 @@ const BulkTransfer = ({ user, setUser, transactions, setTransactions }) => {
     const [fileName, setFileName] = useState('');
     const [processing, setProcessing] = useState(false);
 
-    // FPIN & Confirmation State
+    // OTP & Confirmation State
     const [openConfirm, setOpenConfirm] = useState(false);
-    const [fpinInput, setFpinInput] = useState('');
-    const [fpinError, setFpinError] = useState('');
+    const [otpInput, setOtpInput] = useState('');
+    const [otpError, setOtpError] = useState('');
     const [success, setSuccess] = useState(false);
+    const [isProcessed, setIsProcessed] = useState(false);
 
     // Alert State
     const [openAlert, setOpenAlert] = useState(false);
@@ -84,15 +88,15 @@ const BulkTransfer = ({ user, setUser, transactions, setTransactions }) => {
             return;
         }
 
-        setFpinInput('');
-        setFpinError('');
+        setOtpInput('');
+        setOtpError('');
         setOpenConfirm(true);
     };
 
     const confirmTransfer = () => {
-        // Validate FPIN
-        if (fpinInput !== user.fpin) {
-            setFpinError('Invalid FPIN code.');
+        // Validate OTP
+        if (otpInput !== user.otp) {
+            setOtpError('Invalid OTP code.');
             return;
         }
 
@@ -114,10 +118,53 @@ const BulkTransfer = ({ user, setUser, transactions, setTransactions }) => {
             }));
             setTransactions([...transactions, ...newHistoryItems]);
 
+            // Update local statuses
+            setLocalTransactions(prev => prev.map(tx => ({ ...tx, status: 'Success' })));
+            setIsProcessed(true);
+
             setProcessing(false);
             setOpenConfirm(false);
             setSuccess(true);
         }, 1500);
+    };
+
+    const handleDownloadPDF = () => {
+        const doc = new jsPDF();
+
+        // Add Header
+        doc.setFontSize(18);
+        doc.setTextColor(0, 51, 102); // BOK Blue
+        doc.text('Bank of Khyber - Bulk Transfer Report', 14, 20);
+
+        doc.setFontSize(11);
+        doc.setTextColor(100);
+        doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, 30);
+        doc.text(`Batch Size: ${localTransactions.length} items`, 14, 35);
+
+        // Add Table
+        const tableData = localTransactions.map(tx => [
+            tx.bankName,
+            tx.iban,
+            `PKR ${parseFloat(tx.amount).toLocaleString()}`,
+            tx.status.toUpperCase()
+        ]);
+
+        autoTable(doc, {
+            startY: 45,
+            head: [['Bank Name', 'IBAN / Account', 'Amount', 'Status']],
+            body: tableData,
+            headStyles: { fillColor: [0, 51, 102] },
+            theme: 'striped'
+        });
+
+        const totalAmount = localTransactions.reduce((sum, tx) => sum + parseFloat(tx.amount || 0), 0);
+        const finalY = (doc).lastAutoTable.finalY + 10;
+
+        doc.setFontSize(12);
+        doc.setTextColor(0);
+        doc.text(`Total Processed Amount: PKR ${totalAmount.toLocaleString()}`, 14, finalY);
+
+        doc.save(`Bulk_Transfer_Report_${Date.now()}.pdf`);
     };
 
     const handleCloseSuccess = () => {
@@ -181,6 +228,7 @@ const BulkTransfer = ({ user, setUser, transactions, setTransactions }) => {
                                             <TableCell sx={{ fontWeight: 600, py: 2 }}>Bank</TableCell>
                                             <TableCell sx={{ fontWeight: 600, py: 2 }}>IBAN / Account</TableCell>
                                             <TableCell align="right" sx={{ fontWeight: 600, py: 2 }}>Amount</TableCell>
+                                            <TableCell align="center" sx={{ fontWeight: 600, py: 2 }}>Status</TableCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
@@ -189,6 +237,15 @@ const BulkTransfer = ({ user, setUser, transactions, setTransactions }) => {
                                                 <TableCell sx={{ fontWeight: 500 }}>{row.bankName}</TableCell>
                                                 <TableCell sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>{row.iban}</TableCell>
                                                 <TableCell align="right" sx={{ fontWeight: 600, color: 'text.primary' }}>{parseFloat(row.amount).toLocaleString()}</TableCell>
+                                                <TableCell align="center">
+                                                    <Chip
+                                                        label={row.status}
+                                                        size="small"
+                                                        color={row.status === 'Success' ? 'success' : 'default'}
+                                                        variant={row.status === 'Success' ? 'filled' : 'outlined'}
+                                                        sx={{ fontWeight: 600, textTransform: 'capitalize' }}
+                                                    />
+                                                </TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
@@ -196,15 +253,27 @@ const BulkTransfer = ({ user, setUser, transactions, setTransactions }) => {
                             </TableContainer>
 
                             <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+                                {isProcessed && (
+                                    <Button
+                                        variant="outlined"
+                                        color="primary"
+                                        size="large"
+                                        startIcon={<DownloadIcon />}
+                                        onClick={handleDownloadPDF}
+                                        sx={{ borderRadius: 3, px: 4, fontWeight: 'bold' }}
+                                    >
+                                        Download Report (PDF)
+                                    </Button>
+                                )}
                                 <Button
                                     variant="contained"
-                                    color="success"
+                                    color={isProcessed ? "inherit" : "success"}
                                     size="large"
-                                    onClick={handleProcessClick}
+                                    onClick={isProcessed ? handleCloseSuccess : handleProcessClick}
                                     disabled={processing}
                                     sx={{ minWidth: 240, py: 1.5, borderRadius: 3, fontWeight: 'bold' }}
                                 >
-                                    {processing ? 'Processing...' : `Confirm & Process (${localTransactions.length})`}
+                                    {processing ? 'Processing...' : isProcessed ? 'Done' : `Confirm & Process (${localTransactions.length})`}
                                 </Button>
                             </Box>
                         </Box>
@@ -222,23 +291,24 @@ const BulkTransfer = ({ user, setUser, transactions, setTransactions }) => {
                     </DialogContentText>
 
                     <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <Typography variant="subtitle2" fontWeight="600" sx={{ mb: 0.5, color: 'text.primary' }}>Enter 4-Digit FPIN</Typography>
+                        <Typography variant="subtitle2" fontWeight="600" sx={{ mb: 0.5, color: 'text.primary' }}>Enter 6-Digit OTP</Typography>
                         <Box sx={{ mt: 1, mb: 2 }}>
                             <PinInput
+                                length={6}
                                 onChange={(val) => {
-                                    setFpinInput(val);
-                                    setFpinError('');
+                                    setOtpInput(val);
+                                    setOtpError('');
                                 }}
-                                error={!!fpinError}
+                                error={!!otpError}
                             />
                         </Box>
-                        {fpinError && (
+                        {otpError && (
                             <Typography variant="caption" color="error" sx={{ mb: 1 }}>
-                                {fpinError}
+                                {otpError}
                             </Typography>
                         )}
                         <Typography variant="caption" color="text.secondary" align="center" display="block">
-                            Enter the FPIN code associated with your account to authorize this batch.
+                            Enter the OTP code sent to your registered mobile number authorize this batch.
                         </Typography>
                     </Box>
                 </DialogContent>
@@ -281,9 +351,12 @@ const BulkTransfer = ({ user, setUser, transactions, setTransactions }) => {
                         All valid transactions have been processed successfully.
                     </DialogContentText>
                 </DialogContent>
-                <DialogActions sx={{ justifyContent: 'center', p: 0, mt: 3 }}>
-                    <Button onClick={handleCloseSuccess} variant="contained" color="success" size="large" fullWidth>
-                        Return to Dashboard
+                <DialogActions sx={{ justifyContent: 'center', p: 0, mt: 3, flexDirection: 'column', gap: 2 }}>
+                    <Button onClick={handleDownloadPDF} variant="outlined" color="primary" size="large" fullWidth startIcon={<DownloadIcon />}>
+                        Download Transaction Receipt
+                    </Button>
+                    <Button onClick={() => setSuccess(false)} variant="contained" color="success" size="large" fullWidth>
+                        View Status Table
                     </Button>
                 </DialogActions>
             </Dialog>
