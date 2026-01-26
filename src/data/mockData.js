@@ -10,7 +10,6 @@ export const users = [
     },
     {
         userId: 'tasawur',
-        
         password: '123456',
         name: 'Tasawur Hussain',
         accountNumber: 'PK99BOKK98765432109876',
