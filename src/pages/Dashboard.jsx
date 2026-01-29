@@ -22,7 +22,7 @@ const Dashboard = ({ user, transactions }) => {
                 </Box>
 
                 {/* Top Row: Balance & Actions */}
-                <Grow in={true} timeout={1000}>
+                <Grow in={true} timeout={1000}>  
                     <Paper sx={{ p: 3, mb: 4, borderRadius: 4, boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
                         <Grid container spacing={4} alignItems="center" justifyContent={"space-between"}>
                             {/* Balance Section */}
