@@ -32,7 +32,7 @@ const Dashboard = ({ user, transactions }) => {
                                         <AccountBalanceWalletIcon color="primary" sx={{ mr: 1, fontSize: 24 }} />
                                         <Typography variant="overline" color="text.secondary" fontWeight="bold">Current Balance</Typography>
                                     </Box>
-                                    <Typography variant="h3" fontWeight="bold" sx={{ color: 'primary.main', mb: 1 }}>
+                                    <Typography variant="h4" fontWeight="bold" sx={{ color: 'primary.main', mb: 1 }}>
                                         PKR {user.balance.toLocaleString()}
                                     </Typography>
                                     <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace', bgcolor: '#F8F9FA', px: 1.5, py: 0.5, borderRadius: 1 }}>
