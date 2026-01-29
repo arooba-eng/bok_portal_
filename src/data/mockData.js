@@ -9,9 +9,9 @@ export const users = [
         otp: '123456'
     },
     {
-        userId: 'tasawur',
+        userId: 'tassawur',
         password: '123456',
-        name: 'Tasawur Hussain',
+        name: 'Tassawur Hussain',
         accountNumber: 'PK99BOKK98765432109876',
         balance: 10000000,
         email: 'tasawur@kuickpay.com',

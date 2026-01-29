@@ -16,9 +16,9 @@ const Header = ({ user, onLogout }) => {
                 >
                     <Box
                         component="img"
-                        src="/bok_logo.jpg"
+                        src="/BOK_Horizontal.png"
                         alt="Bank of Khyber"
-                        sx={{ height: { xs: 40, md: 50 }, mr: 2 }}
+                        sx={{ height: { xs: 40, md: 40 }, mr: 2 }}
                     />
                 </Box>
 
@@ -28,9 +28,9 @@ const Header = ({ user, onLogout }) => {
                         <Typography variant="subtitle2" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
                             {user.name}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        {/* <Typography variant="caption" color="text.secondary">
                             {user.userId}
-                        </Typography>
+                        </Typography> */}
                     </Box>
 
                     <Avatar sx={{ bgcolor: 'secondary.main', width: { xs: 32, md: 40 }, height: { xs: 32, md: 40 }, fontWeight: 'bold' }}>
