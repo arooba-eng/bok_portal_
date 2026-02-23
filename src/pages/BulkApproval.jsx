@@ -38,7 +38,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import PinInput from '../components/PinInput';
 
-const BulkApproval = ({ user, setUser, transactions, setTransactions, pendingBatches, setPendingBatches }) => {
+const BulkApproval = ({ user, setUser, transactions, setTransactions, pendingBatches, setPendingBatches, balance = 0, updateBalance }) => {
     const navigate = useNavigate();
 
     const [selectedBatch, setSelectedBatch] = useState(null);
@@ -180,14 +180,14 @@ const BulkApproval = ({ user, setUser, transactions, setTransactions, pendingBat
 
         setProcessing(true);
         setTimeout(() => {
-            if (totalToDeduct > user.balance) {
-                setOtpError('Insufficient balance to process selected transaction(s).');
+            if (totalToDeduct > balance) {
+                setOtpError('Insufficient institution balance to process selected transaction(s).');
                 setProcessing(false);
                 return;
             }
 
-            const newBalance = user.balance - totalToDeduct;
-            setUser({ ...user, balance: newBalance });
+            // Update shared institution balance via App.js function
+            updateBalance(totalToDeduct);
 
             const newHistoryItems = [];
             batchesToProcess.forEach(batch => {

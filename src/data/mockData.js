@@ -4,15 +4,14 @@ export const users = [
         password: '123',
         name: 'Arooba Khan',
         role: 'user',
+        hierarchy: 'Maker',
         institutionId: 'INST001',
         accountNumber: 'PK12BOKK12345678901234',
-        balance: 500000,
         email: 'aroobakhan@innovarge.com',
         otp: '123456',
         accounts: [
-            { accountNumber: 'PK12BOKK12345678901234', balance: 500000, title: 'Current Account' },
-            { accountNumber: 'PK12BOKK00001111222233', balance: 250000, title: 'Savings Account' },
-            { accountNumber: 'PK12BOKK99998888777766', balance: 100000, title: 'Business Account' }
+            { accountNumber: 'PK12BOKK12345678901234', title: 'Corporate Current Account' },
+            { accountNumber: 'PK12BOKK00001111222233', title: 'Payroll Account' }
         ]
     },
     {
@@ -20,14 +19,13 @@ export const users = [
         password: '123456',
         name: 'Tassawur Hussain',
         role: 'user',
+        hierarchy: 'Checker/Approver',
         institutionId: 'INST001',
-        accountNumber: 'PK99BOKK98765432109876',
-        balance: 10000000,
+        accountNumber: 'PK12BOKK12345678901234',
         email: 'tasawur@kuickpay.com',
         otp: '123456',
         accounts: [
-            { accountNumber: 'PK99BOKK98765432109876', balance: 10000000, title: 'Primary Account' },
-            { accountNumber: 'PK99BOKK11223344556677', balance: 500000, title: 'Backup Account' }
+            { accountNumber: 'PK12BOKK12345678901234', title: 'Corporate Current Account' }
         ]
     },
     {
@@ -40,8 +38,8 @@ export const users = [
 ];
 
 export const initialInstitutions = [
-    { id: 'INST001', name: 'Innovarge Tech', type: 'Corporate', status: 'Active', onboardedDate: '2023-01-15' },
-    { id: 'INST002', name: 'Kuickpay Solutions', type: 'FSP', status: 'Active', onboardedDate: '2023-03-20' },
+    { id: 'INST001', name: 'Innovarge Tech', type: 'Corporate', status: 'Active', onboardedDate: '2023-01-15', balance: 154500 },
+    { id: 'INST002', name: 'Kuickpay Solutions', type: 'FSP', status: 'Active', onboardedDate: '2023-03-20', balance: 500000},
 ];
 
 export const banks = [

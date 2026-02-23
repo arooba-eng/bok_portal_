@@ -21,7 +21,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { banks } from '../data/mockData';
 import PinInput from '../components/PinInput';
 
-const SingleTransfer = ({ user, setUser, transactions, setTransactions, pendingBatches, setPendingBatches }) => {
+const SingleTransfer = ({ user, setUser, transactions, setTransactions, pendingBatches, setPendingBatches, balance = 0 }) => {
     const navigate = useNavigate();
     const [processing, setProcessing] = useState(false);
 
@@ -130,8 +130,8 @@ const SingleTransfer = ({ user, setUser, transactions, setTransactions, pendingB
             setOpenErrorDialog(true);
             return;
         }
-        if (parseFloat(amount) > user.balance) {
-            setError('Insufficient funds.');
+        if (parseFloat(amount) > balance) {
+            setError('Insufficient institution funds.');
             setOpenErrorDialog(true);
             return;
         }

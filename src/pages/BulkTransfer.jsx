@@ -34,7 +34,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import DownloadIcon from '@mui/icons-material/Download';
 
-const BulkTransfer = ({ user, setUser, transactions, setTransactions, pendingBatches, setPendingBatches }) => {
+const BulkTransfer = ({ user, setUser, transactions, setTransactions, pendingBatches, setPendingBatches, balance = 0 }) => {
     const navigate = useNavigate();
     const fileInputRef = useRef(null);
 
@@ -71,11 +71,8 @@ const BulkTransfer = ({ user, setUser, transactions, setTransactions, pendingBat
         // "fetch the customer name which is me"
         setCustomerName(user?.name || '');
 
-        // Find balance for the selected account
-        const selectedAcc = user?.accounts?.find(a => a.accountNumber === accNo);
-        if (selectedAcc) {
-            setCurrentBalance(selectedAcc.balance);
-        }
+        // Use shared institution balance
+        setCurrentBalance(balance);
     };
 
     const handleFileUpload = (e) => {
@@ -139,8 +136,8 @@ const BulkTransfer = ({ user, setUser, transactions, setTransactions, pendingBat
         // Calculate total amount
         const totalAmount = localTransactions.reduce((sum, tx) => sum + parseFloat(tx.amount || 0), 0);
 
-        if (totalAmount > user.balance) {
-            setAlertMessage("Insufficient funds for bulk transfer!");
+        if (totalAmount > balance) {
+            setAlertMessage("Insufficient institution funds for bulk transfer!");
             setOpenAlert(true);
             return;
         }
@@ -318,7 +315,7 @@ const BulkTransfer = ({ user, setUser, transactions, setTransactions, pendingBat
                                     if (!debitAccount) {
                                         setAlertMessage("Please select a debit account first.");
                                     } else {
-                                        setAlertMessage(`Current Balance for ${debitAccount}: PKR ${currentBalance.toLocaleString()}`);
+                                        setAlertMessage(`Institution Balance available for ${debitAccount}: PKR ${balance.toLocaleString()}`);
                                     }
                                     setOpenAlert(true);
                                 }}
@@ -529,9 +526,9 @@ const BulkTransfer = ({ user, setUser, transactions, setTransactions, pendingBat
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions sx={{ justifyContent: 'center', p: 0, mt: 3, flexDirection: 'column', gap: 2 }}>
-            
+
                     <Button onClick={() => setSuccess(false)} variant="contained" color="success" size="large" fullWidth>
-                       OK
+                        OK
                     </Button>
                 </DialogActions>
             </Dialog>

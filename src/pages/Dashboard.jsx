@@ -7,7 +7,7 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
-const Dashboard = ({ user, transactions, pendingBatches = [] }) => {
+const Dashboard = ({ user, transactions, pendingBatches = [], balance = 0 }) => {
     const navigate = useNavigate();
     const [openAlert, setOpenAlert] = useState(false);
 
@@ -15,11 +15,18 @@ const Dashboard = ({ user, transactions, pendingBatches = [] }) => {
         <Fade in={true} timeout={800}>
             <Container maxWidth={false} sx={{ mt: 3, mb: 6, width: '100%', px: { xs: 2, md: 4 } }}>
                 {/* Page Header */}
-                <Box sx={{ mb: 3 }}>
-                    <Typography variant="h5" fontWeight="bold">Dashboard</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                        Welcome back, <strong>{user.name}</strong>
-                    </Typography>
+                <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                    <Box>
+                        <Typography variant="h5" fontWeight="bold">Dashboard</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            Welcome back, <strong>{user.name}</strong>
+                        </Typography>
+                    </Box>
+                    <Box sx={{ bgcolor: user.hierarchy === 'Maker' ? '#e8f5e9' : '#e3f2fd', px: 2, py: 0.5, borderRadius: 2, border: '1px solid', borderColor: user.hierarchy === 'Maker' ? '#c8e6c9' : '#bbdefb' }}>
+                        <Typography variant="caption" sx={{ fontWeight: 700, color: user.hierarchy === 'Maker' ? '#2e7d32' : '#1565c0' }}>
+                            ROLE: {user.role === 'admin' ? 'Bank Admin' : (user.hierarchy || 'GENERAL USER')}
+                        </Typography>
+                    </Box>
                 </Box>
 
                 {/* Top Row: Balance & Actions */}
@@ -31,10 +38,10 @@ const Dashboard = ({ user, transactions, pendingBatches = [] }) => {
                                 <Box sx={{ p: 1 }}>
                                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                                         <AccountBalanceWalletIcon color="primary" sx={{ mr: 1, fontSize: 24 }} />
-                                        <Typography variant="overline" color="text.secondary" fontWeight="bold">Current Balance</Typography>
+                                        <Typography variant="overline" color="text.secondary" fontWeight="bold">Institution Balance</Typography>
                                     </Box>
                                     <Typography variant="h4" fontWeight="bold" sx={{ color: 'primary.main', mb: 1 }}>
-                                        PKR {user.balance.toLocaleString()}
+                                        PKR {balance.toLocaleString()}
                                     </Typography>
                                     <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace', bgcolor: '#F8F9FA', px: 1.5, py: 0.5, borderRadius: 1 }}>
                                         {user.accountNumber}
@@ -53,7 +60,7 @@ const Dashboard = ({ user, transactions, pendingBatches = [] }) => {
                             {/* Quick Actions Section */}
                             <Grid item xs={12} md={6.5} lg={7.5}>
                                 <Grid container spacing={2}>
-                                    {(user.hierarchy === 'Maker' || !user.hierarchy) && (
+                                    {(user.hierarchy?.toLowerCase() === 'maker' || user.role === 'admin') && (
                                         <>
                                             <Grid item xs={6} sm={3}>
                                                 <Button
@@ -107,7 +114,7 @@ const Dashboard = ({ user, transactions, pendingBatches = [] }) => {
                                             </Grid>
                                         </>
                                     )}
-                                    {(user.hierarchy === 'Checker/Approver' || !user.hierarchy) && (
+                                    {(user.hierarchy?.toLowerCase() === 'checker/approver' || user.role === 'admin') && (
                                         <Grid item xs={6} sm={3}>
                                             <Button
                                                 fullWidth
@@ -178,10 +185,69 @@ const Dashboard = ({ user, transactions, pendingBatches = [] }) => {
                     </Paper>
                 </Grow>
 
+                {/* Pending Approvals Section - Only for Approvers/Admins */}
+                {(user.hierarchy?.toLowerCase() === 'checker/approver' || user.role === 'admin') && pendingBatches.length > 0 && (
+                    <Fade in={true} timeout={1200}>
+                        <Paper sx={{ p: 3, mb: 4, borderRadius: 3, borderLeft: '6px solid #2e7d32', boxShadow: '0 4px 15px rgba(0,0,0,0.08)' }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                <Typography variant="h6" fontWeight="bold" sx={{ color: '#1a4f3e' }}>Items Pending Your Approval</Typography>
+                                <Button size="small" variant="text" onClick={() => navigate('/transfer/approvals')}>View All</Button>
+                            </Box>
+                            <Divider sx={{ mb: 2 }} />
+                            {pendingBatches.map((batch) => (
+                                <Box key={batch.id} sx={{ py: 1.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <Box>
+                                        <Typography variant="body2" fontWeight="600">{batch.customerName || 'Standard Transaction'}</Typography>
+                                        <Typography variant="caption" color="text.secondary">{batch.productName} • {batch.timestamp}</Typography>
+                                    </Box>
+                                    <Box sx={{ textAlign: 'right' }}>
+                                        <Typography variant="body2" fontWeight="700" color="primary.main">PKR {batch.totalAmount.toLocaleString()}</Typography>
+                                        <Typography variant="caption" sx={{ bgcolor: '#fff3e0', color: '#e65100', px: 1, borderRadius: 1 }}>Pending</Typography>
+                                    </Box>
+                                </Box>
+                            ))}
+                        </Paper>
+                    </Fade>
+                )}
+
                 {/* Recent Activity - Compact */}
                 <Fade in={true} timeout={1500}>
                     <Paper sx={{ p: 3, borderRadius: 3, boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
                         <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>Recent Activity</Typography>
+
+                        {/* Filtered Activity based on Role */}
+                        {user.hierarchy === 'Maker' && pendingBatches.filter(b => b.makerId === user.userId).map((pb, idx) => (
+                            <Box key={'pb-' + pb.id}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: 1.5 }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <Box sx={{
+                                            width: 40,
+                                            height: 40,
+                                            borderRadius: 2,
+                                            bgcolor: '#FFF9DB',
+                                            color: '#F59F00',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            mr: 2
+                                        }}>
+                                            <CloudUploadIcon sx={{ fontSize: '1rem' }} />
+                                        </Box>
+                                        <Box>
+                                            <Typography variant="body2" fontWeight="600" sx={{ mb: 0 }}>{pb.productName} (Submitted)</Typography>
+                                            <Typography variant="caption" color="text.secondary">{pb.timestamp}</Typography>
+                                        </Box>
+                                    </Box>
+                                    <Box sx={{ textAlign: 'right' }}>
+                                        <Typography variant="body1" fontWeight="bold" sx={{ fontSize: '0.95rem' }}>
+                                            PKR {pb.totalAmount.toLocaleString()}
+                                        </Typography>
+                                        <Typography variant="caption" sx={{ color: 'warning.main' }}>Awaiting Approval</Typography>
+                                    </Box>
+                                </Box>
+                                <Divider />
+                            </Box>
+                        ))}
 
                         {transactions.slice(0).reverse().map((tx, index) => (
                             <Box key={tx.id}>

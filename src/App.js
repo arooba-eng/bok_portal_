@@ -25,8 +25,20 @@ function App() {
         if (storedUser) {
             setUser(JSON.parse(storedUser));
         }
+
+        const storedBatches = localStorage.getItem('pendingBatches');
+        if (storedBatches) {
+            setPendingBatches(JSON.parse(storedBatches));
+        }
+
         setLoading(false);
     }, []);
+
+    useEffect(() => {
+        if (!loading) {
+            localStorage.setItem('pendingBatches', JSON.stringify(pendingBatches));
+        }
+    }, [pendingBatches, loading]);
 
     const handleLogin = (credentials) => {
         const foundUser = users.find(u => u.userId === credentials.userId && u.password === credentials.password);
@@ -41,6 +53,18 @@ function App() {
     const handleLogout = () => {
         setUser(null);
         localStorage.removeItem('user');
+    };
+
+    const getInstBalance = () => {
+        if (!user || user.role === 'admin') return 0;
+        const inst = institutions.find(i => i.id === user.institutionId);
+        return inst ? inst.balance : 0;
+    };
+
+    const updateInstBalance = (amountToSubtract) => {
+        setInstitutions(prev => prev.map(inst =>
+            inst.id === user.institutionId ? { ...inst, balance: inst.balance - amountToSubtract } : inst
+        ));
     };
 
     if (loading) {
@@ -61,19 +85,19 @@ function App() {
                     <Route element={user && user.role === 'user' ? <Layout user={user} onLogout={handleLogout} /> : <Navigate to="/login" />}>
                         <Route
                             path="/dashboard"
-                            element={<Dashboard user={user} transactions={transactions} pendingBatches={pendingBatches} />}
+                            element={<Dashboard user={user} transactions={transactions} pendingBatches={pendingBatches} balance={getInstBalance()} />}
                         />
                         <Route
                             path="/transfer/single"
-                            element={<SingleTransfer user={user} setUser={setUser} transactions={transactions} setTransactions={setTransactions} pendingBatches={pendingBatches} setPendingBatches={setPendingBatches} />}
+                            element={user?.hierarchy === 'Checker/Approver' ? <Navigate to="/dashboard" /> : <SingleTransfer user={user} setUser={setUser} transactions={transactions} setTransactions={setTransactions} pendingBatches={pendingBatches} setPendingBatches={setPendingBatches} balance={getInstBalance()} />}
                         />
                         <Route
                             path="/transfer/bulk"
-                            element={<BulkTransfer user={user} setUser={setUser} transactions={transactions} setTransactions={setTransactions} pendingBatches={pendingBatches} setPendingBatches={setPendingBatches} />}
+                            element={user?.hierarchy === 'Checker/Approver' ? <Navigate to="/dashboard" /> : <BulkTransfer user={user} setUser={setUser} transactions={transactions} setTransactions={setTransactions} pendingBatches={pendingBatches} setPendingBatches={setPendingBatches} balance={getInstBalance()} />}
                         />
                         <Route
                             path="/transfer/approvals"
-                            element={<BulkApproval user={user} setUser={setUser} transactions={transactions} setTransactions={setTransactions} pendingBatches={pendingBatches} setPendingBatches={setPendingBatches} />}
+                            element={<BulkApproval user={user} setUser={setUser} transactions={transactions} setTransactions={setTransactions} pendingBatches={pendingBatches} setPendingBatches={setPendingBatches} balance={getInstBalance()} updateBalance={updateInstBalance} />}
                         />
                     </Route>
 
