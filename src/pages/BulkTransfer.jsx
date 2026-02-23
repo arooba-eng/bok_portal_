@@ -315,7 +315,7 @@ const BulkTransfer = ({ user, setUser, transactions, setTransactions, pendingBat
                                     if (!debitAccount) {
                                         setAlertMessage("Please select a debit account first.");
                                     } else {
-                                        setAlertMessage(`Institution Balance available for ${debitAccount}: PKR ${balance.toLocaleString()}`);
+                                        setAlertMessage(`Institution Balance available for ${debitAccount}: PKR ${balance.toLocaleString() || currentBalance}`);
                                     }
                                     setOpenAlert(true);
                                 }}

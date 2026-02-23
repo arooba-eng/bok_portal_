@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Grid, Box, TextField, Button, Typography, Alert, Container, Paper } from '@mui/material';
-import { users } from '../data/mockData';
 import { Link } from 'react-router-dom';
 
 const Login = ({ onLogin }) => {
