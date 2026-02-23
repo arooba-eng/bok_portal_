@@ -12,19 +12,37 @@ import {
     DialogContent,
     DialogContentText,
     DialogActions,
-    Grid
+    Grid,
+    FormControl,
+    Select
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { banks } from '../data/mockData';
 import PinInput from '../components/PinInput';
 
-const SingleTransfer = ({ user, setUser, transactions, setTransactions }) => {
+const SingleTransfer = ({ user, setUser, transactions, setTransactions, pendingBatches, setPendingBatches }) => {
     const navigate = useNavigate();
-    const [selectedBank, setSelectedBank] = useState('');
-    const [iban, setIban] = useState('');
+    const [processing, setProcessing] = useState(false);
+
+    // Top Section State
+    const [companyName, setCompanyName] = useState(user?.name || '');
+    const [productName, setProductName] = useState('');
+    const [debitAccount, setDebitAccount] = useState('');
+    const [fileTemplate, setFileTemplate] = useState('INTERNAL TRANSFER- STANDARD');
+
+    // Transaction Detail State
+    const [transactionDate, setTransactionDate] = useState(new Date().toISOString().split('T')[0]);
+    const [beneAccNo, setBeneAccNo] = useState('');
+    const [beneName, setBeneName] = useState('');
+    const [beneAccountTitle, setBeneAccountTitle] = useState('');
     const [amount, setAmount] = useState('');
-    const [description, setDescription] = useState('');
+    const [bankCode, setBankCode] = useState('BOK');
+    const [bankNameField, setBankNameField] = useState('');
+    const [custRef, setCustRef] = useState('');
+    const [ref1, setRef1] = useState('');
+    const [purposeOfPayment, setPurposeOfPayment] = useState('RAAST FUND TRANSFER');
+
     const [error, setError] = useState('');
     const [openErrorDialog, setOpenErrorDialog] = useState(false);
 
@@ -32,11 +50,59 @@ const SingleTransfer = ({ user, setUser, transactions, setTransactions }) => {
     const [openConfirm, setOpenConfirm] = useState(false);
     const [otpInput, setOtpInput] = useState('');
     const [otpError, setOtpError] = useState('');
-
     const [success, setSuccess] = useState(false);
+    const [verifying, setVerifying] = useState(false);
+
+    const handleProductChange = (e) => {
+        const val = e.target.value;
+        setProductName(val);
+        if (val === 'INTERNAL FUNDS TRANSFER') {
+            setFileTemplate('IFT-STANDARD');
+            setBankCode('BOK');
+        } else if (val === 'INTER BANK FUNDS TRANSFER') {
+            setFileTemplate('IBFT-STANDARD');
+            setBankCode('');
+        }
+    };
+
+    const handleAccountChange = (e) => {
+        setDebitAccount(e.target.value);
+    };
+
+    const handleVerifyAccount = () => {
+        if (!beneAccNo) {
+            setError('Please enter an account number to verify.');
+            setOpenErrorDialog(true);
+            return;
+        }
+
+        setVerifying(true);
+        // Simulate API call to verify account
+        setTimeout(() => {
+            if (productName === 'INTERNAL FUNDS TRANSFER') {
+                // Internal BOK Simulation
+                if (beneAccNo.includes('123')) {
+                    setBeneAccountTitle('Syed Ahmed Ali');
+                    setBeneName('Syed Ahmed Ali');
+                } else if (beneAccNo.includes('987')) {
+                    setBeneAccountTitle('Innovarge Technologies');
+                    setBeneName('Innovarge Technologies');
+                } else {
+                    setError('BOK Account not found. Please check the number.');
+                    setOpenErrorDialog(true);
+                    setBeneAccountTitle('');
+                }
+            } else {
+                // IBFT Simulation
+                const simulatedTitle = beneName ? beneName.toUpperCase() : 'EXTERNAL CUSTOMER';
+                setBeneAccountTitle('VERIFIED: ' + simulatedTitle);
+            }
+            setVerifying(false);
+        }, 1200);
+    };
 
     const handleTransferInit = () => {
-        if (!selectedBank || !iban || !amount) {
+        if (!debitAccount || !beneAccNo || !amount || (productName.includes('INTER') && !bankCode)) {
             setError('Please fill in all required fields.');
             setOpenErrorDialog(true);
             return;
@@ -58,148 +124,288 @@ const SingleTransfer = ({ user, setUser, transactions, setTransactions }) => {
     };
 
     const confirmTransfer = () => {
-        // Validate OTP
         if (otpInput !== user.otp) {
             setOtpError('Invalid OTP code.');
             return;
         }
 
+        setProcessing(true);
         const transferAmount = parseFloat(amount);
 
-        // 1. Deduct balance
-        const newBalance = user.balance - transferAmount;
-        const updatedUser = { ...user, balance: newBalance };
-        setUser(updatedUser);
+        setTimeout(() => {
+            const newBatch = {
+                id: Date.now(),
+                maker: user.name,
+                makerId: user.userId,
+                timestamp: new Date().toLocaleString(),
+                totalAmount: transferAmount,
+                count: 1,
+                customerName: companyName,
+                debitAccount: debitAccount,
+                productName: productName,
+                fileTemplate: fileTemplate,
+                fileName: `Single_${beneName}_${Date.now()}.tx`,
+                transactions: [
+                    {
+                        id: Date.now(),
+                        date: transactionDate,
+                        beneName: beneName,
+                        accountNumber: beneAccNo,
+                        bank: bankCode || 'BOK',
+                        bankName: bankNameField,
+                        amount: transferAmount,
+                        custRef: custRef,
+                        ref1: ref1,
+                        purpose: purposeOfPayment,
+                        status: 'pending'
+                    }
+                ],
+                status: 'Pending Approval'
+            };
 
-        // 2. Add to History
-        const bankName = banks.find(b => b.code === selectedBank)?.name || selectedBank;
-        const newTx = {
-            id: Date.now(),
-            date: new Date().toISOString().split('T')[0],
-            description: `Transfer to ${bankName} (${iban})`,
-            amount: -transferAmount, // Negative for debit
-            type: 'debit'
-        };
-        setTransactions([...transactions, newTx]);
-
-        setOpenConfirm(false);
-        setSuccess(true);
+            setPendingBatches([...pendingBatches, newBatch]);
+            setProcessing(false);
+            setOpenConfirm(false);
+            setSuccess(true);
+        }, 1500);
     };
 
-    const handleCloseSuccess = () => {
-        setSuccess(false);
-        navigate('/dashboard');
-    }
+    const handleReset = () => {
+        setBeneAccNo('');
+        setBeneName('');
+        setBeneAccountTitle('');
+        setAmount('');
+        setCustRef('');
+        setRef1('');
+        setBankNameField('');
+        setPurposeOfPayment('RAAST FUND TRANSFER');
+        if (productName === 'INTER BANK FUNDS TRANSFER') setBankCode('');
+    };
 
-    const FormLabel = ({ children }) => (
-        <Typography variant="subtitle2" fontWeight="600" sx={{ mb: 0.5, color: 'text.primary' }}>
-            {children}
+    const FormLabel = ({ children, required }) => (
+        <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
+            {children} {required && '*'}
         </Typography>
     );
 
+    const maskAccountNumber = (acc) => {
+        if (!acc) return '';
+        return acc.substring(0, 4) + '**********' + acc.substring(acc.length - 4);
+    };
+
     return (
-        <Container maxWidth={false} sx={{ mt: 5, mb: 5, width: '100%', px: { xs: 2, md: 5 } }}>
-            <Box sx={{ mb: 3 }}>
-                <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/dashboard')} sx={{ color: 'text.secondary' }}>
+        <Container maxWidth={false} sx={{ mt: 3, mb: 5, width: '100%', px: { xs: 2, md: 5 } }}>
+            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/dashboard')} sx={{ color: 'text.secondary', textTransform: 'none' }}>
                     Back to Dashboard
                 </Button>
+                <Typography variant="subtitle2" color="text.secondary">Create Transaction</Typography>
             </Box>
 
-            <Grid container justifyContent="center">
-                <Grid item xs={12} md={10} lg={8}>
-                    <Paper sx={{ p: { xs: 3, md: 5 }, borderRadius: 4 }}>
-                        <Box sx={{ mb: 4, textAlign: 'center' }}>
-                            <Typography variant="h5" fontWeight="bold" gutterBottom>
-                                Single Fund Transfer
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                                Securely transfer funds to any bank account in Pakistan.
-                            </Typography>
-                        </Box>
+            <Paper sx={{ p: { xs: 3, md: 4 }, borderRadius: 2, boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
 
-                        <form>
-                            <Grid container spacing={3}>
-                                {/* Row 1: Bank & IBAN */}
-                                <Grid item xs={12} md={6}>
-                                    <FormLabel>Select Bank</FormLabel>
-                                    <TextField
-                                        select
-                                        fullWidth
-                                        size="small"
-                                        value={selectedBank}
-                                        onChange={(e) => setSelectedBank(e.target.value)}
-                                        placeholder="Select Bank"
-                                    >
-                                        {banks.map((option) => (
-                                            <MenuItem key={option.code} value={option.code}>
-                                                {option.name}
-                                            </MenuItem>
-                                        ))}
-                                    </TextField>
-                                </Grid>
-                                <Grid item xs={12} md={6}>
-                                    <FormLabel>IBAN / Account Number</FormLabel>
-                                    <TextField
-                                        fullWidth
-                                        size="small"
-                                        value={iban}
-                                        onChange={(e) => setIban(e.target.value)}
-                                        placeholder="PK36BOKK..."
-                                    />
-                                </Grid>
+                {/* Top Section: Basic Info */}
+                <Grid container spacing={3} sx={{ mb: 4 }}>
+                    <Grid item xs={12} md={6}>
+                        <FormLabel>Company Name</FormLabel>
+                        <TextField
+                            fullWidth
+                            size="small"
+                            value={companyName}
+                            onChange={(e) => setCompanyName(e.target.value)}
+                            sx={{ bgcolor: '#fff' }}
+                        />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                        <FormLabel>Product Name</FormLabel>
+                        <FormControl fullWidth size="small">
+                            <Select value={productName}      displayEmpty  onChange={handleProductChange} sx={{ bgcolor: '#fff' }}>
+                                                                <MenuItem value="" disabled>Select Account</MenuItem>
 
-                                {/* Row 2: Amount & Description */}
-                                <Grid item xs={12} md={6}>
-                                    <FormLabel>Amount (PKR)</FormLabel>
-                                    <TextField
-                                        fullWidth
-                                        size="small"
-                                        type="number"
-                                        value={amount}
-                                        onChange={(e) => setAmount(e.target.value)}
-                                        placeholder="0.00"
-                                        InputProps={{ inputProps: { min: 0 } }}
-                                    />
-                                </Grid>
-                                <Grid item xs={12} md={6}>
-                                    <FormLabel>Description (Optional)</FormLabel>
-                                    <TextField
-                                        fullWidth
-                                        size="small"
-                                        value={description}
-                                        onChange={(e) => setDescription(e.target.value)}
-                                        placeholder="e.g. Rent payment"
-                                    />
-                                </Grid>
-                            </Grid>
+                                <MenuItem value="INTERNAL FUNDS TRANSFER">INTERNAL FUNDS TRANSFER</MenuItem>
+                                <MenuItem value="INTER BANK FUNDS TRANSFER">INTER BANK FUNDS TRANSFER</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                        <FormLabel>Debit Account</FormLabel>
+                        <FormControl fullWidth size="small">
+                            <Select
+                                value={debitAccount}
+                                onChange={handleAccountChange}
+                                displayEmpty
+                                sx={{ bgcolor: '#fff' }}
+                            >
+                                <MenuItem value="" disabled>Select Account</MenuItem>
+                                {user?.accounts?.map((acc) => (
+                                    <MenuItem key={acc.accountNumber} value={acc.accountNumber}>
+                                        {maskAccountNumber(acc.accountNumber)}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                        <FormLabel>File Template</FormLabel>
+                        <FormControl fullWidth size="small">
+                            <Select value={fileTemplate} onChange={(e) => setFileTemplate(e.target.value)} sx={{ bgcolor: '#fff' }}>
+                                <MenuItem value="IFT-STANDARD">IFT-STANDARD</MenuItem>
+                                <MenuItem value="IBFT-STANDARD">IBFT-STANDARD</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                </Grid>
 
-                            <Box sx={{ mt: 4, textAlign: 'center' }}>
+                <Box sx={{ bgcolor: '#f8f9fa', p: 1, mb: 3, borderRadius: 1 }}>
+                    <Typography variant="caption" fontWeight="bold" color="text.secondary">File Transactions Summary</Typography>
+                </Box>
+
+                {/* Transaction Detail Section */}
+                <Box>
+                    <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 2, borderBottom: '2px solid #002147', display: 'inline-block', pb: 0.5 }}>
+                        Transaction Detail
+                    </Typography>
+
+                    <Grid container spacing={3}>
+                        <Grid item xs={12} md={6}>
+                            <FormLabel>DATEOFREME</FormLabel>
+                            <TextField
+                                fullWidth
+                                size="small"
+                                type="date"
+                                value={transactionDate}
+                                onChange={(e) => setTransactionDate(e.target.value)}
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <FormLabel>Customer Reference No</FormLabel>
+                            <TextField
+                                fullWidth
+                                size="small"
+                                value={custRef}
+                                onChange={(e) => setCustRef(e.target.value)}
+                                placeholder="1 to 100 characters"
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <FormLabel>ACCOUNTNUMBER</FormLabel>
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                                <TextField
+                                    fullWidth
+                                    size="small"
+                                    value={beneAccNo}
+                                    onChange={(e) => setBeneAccNo(e.target.value)}
+                                    placeholder="1 to 100 characters"
+                                />
                                 <Button
                                     variant="contained"
-                                    size="medium"
-                                    sx={{ minWidth: 200, py: 1.5, borderRadius: 2 }}
-                                    onClick={handleTransferInit}
+                                    size="small"
+                                    sx={{ bgcolor: '#002147', textTransform: 'none', px: 3,height:40 }}
+                                    onClick={handleVerifyAccount}
+                                    disabled={verifying}
                                 >
-                                    Proceed to Transfer
+                                    {verifying ? '...' : 'Verify'}
                                 </Button>
                             </Box>
-                        </form>
-                    </Paper>
-                </Grid>
-            </Grid>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <FormLabel>BENENAME</FormLabel>
+                            <TextField
+                                fullWidth
+                                size="small"
+                                value={beneName}
+                                onChange={(e) => setBeneName(e.target.value)}
+                                placeholder="1 to 100 characters"
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <FormLabel>TRANSAMOUNT</FormLabel>
+                            <TextField
+                                fullWidth
+                                size="small"
+                                type="number"
+                                value={amount}
+                                onChange={(e) => setAmount(e.target.value)}
+                                placeholder="1 to 100 characters"
+                            />
+                        </Grid>
+                       
+                       
+                        <Grid item xs={12} md={6}>
+                            <FormLabel>BANK CODE</FormLabel>
+                            <TextField
+                                select
+                                fullWidth
+                                size="small"
+                                value={bankCode}
+                                onChange={(e) => setBankCode(e.target.value)}
+                                disabled={productName === 'INTERNAL FUNDS TRANSFER'}
+                            >
+                                                                <MenuItem value="" disabled>Select Bank</MenuItem>
 
+                                {banks.map((option) => (
+                                    <MenuItem key={option.code} value={option.code}>
+                                        {option.name}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <FormLabel>REFERENCE#1</FormLabel>
+                            <TextField
+                                fullWidth
+                                size="small"
+                                value={ref1}
+                                onChange={(e) => setRef1(e.target.value)}
+                                placeholder="1 to 100 characters"
+                            />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <FormLabel>PURPOSEOFPAYMENT</FormLabel>
+                            <FormControl fullWidth size="small">
+                                <Select value={purposeOfPayment} onChange={(e) => setPurposeOfPayment(e.target.value)}>
+                                    <MenuItem value="RAAST FUND TRANSFER">RAAST FUND TRANSFER</MenuItem>
+                                    <MenuItem value="SALARY PAYMENT">SALARY PAYMENT</MenuItem>
+                                    <MenuItem value="VENDOR PAYMENT">VENDOR PAYMENT</MenuItem>
+                                    <MenuItem value="OTHER">OTHER</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                            <FormLabel>BeneAccTitle</FormLabel>
+                            <TextField
+                                fullWidth
+                                size="small"
+                                value={beneAccountTitle}
+                                onChange={(e) => setBeneAccountTitle(e.target.value)}
+                                placeholder="Title"
+                                sx={{ bgcolor: '#f0f4f8' }}
+                            />
+                        </Grid>
+                    </Grid>
+                </Box>
+                {/* Action Buttons Top */}
+                <Box sx={{ mt: 3, display: 'flex', gap: 1, justifyContent: 'end' }}>
+                    <Button variant="contained" size="small" sx={{ bgcolor: '#002147', '&:hover': { bgcolor: '#001a35' }, textTransform: 'none', px: 3 }} onClick={handleTransferInit}>
+                        Submit
+                    </Button>
+                    <Button variant="contained" size="small" sx={{ bgcolor: '#002147', '&:hover': { bgcolor: '#001a35' }, textTransform: 'none', px: 3 }} onClick={handleReset}>
+                        Reset
+                    </Button>
+                </Box>
+            </Paper>
 
-            {/* Confirmation & FPIN Dialog */}
+            {/* Confirmation & OTP Dialog */}
             <Dialog open={openConfirm} onClose={() => setOpenConfirm(false)} PaperProps={{ sx: { borderRadius: 3, p: 1, minWidth: { xs: 300, md: 400 } } }}>
                 <DialogTitle sx={{ fontWeight: 700, textAlign: 'center' }}>Confirm Transfer</DialogTitle>
                 <DialogContent>
                     <DialogContentText sx={{ textAlign: 'center', mb: 3 }}>
                         You are about to transfer <Box component="span" sx={{ fontWeight: 'bold', color: 'primary.main' }}>PKR {parseFloat(amount || 0).toLocaleString()}</Box><br />
-                        to <Box component="span" sx={{ fontWeight: 'bold' }}>{selectedBank}</Box> account <Box component="span" sx={{ fontFamily: 'monospace' }}>{iban}</Box>.
+                        to <Box component="span" sx={{ fontWeight: 'bold' }}>{beneName}</Box> ({bankCode}) account <Box component="span" sx={{ fontFamily: 'monospace' }}>{beneAccNo}</Box>.
                     </DialogContentText>
 
                     <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <FormLabel>Enter 6-Digit OTP</FormLabel>
+                        <Typography variant="subtitle2" fontWeight="600" sx={{ mb: 1 }}>Enter 6-Digit OTP</Typography>
                         <Box sx={{ mt: 1, mb: 2 }}>
                             <PinInput
                                 length={6}
@@ -210,64 +416,41 @@ const SingleTransfer = ({ user, setUser, transactions, setTransactions }) => {
                                 error={!!otpError}
                             />
                         </Box>
-                        {otpError && (
-                            <Typography variant="caption" color="error" sx={{ mb: 1 }}>
-                                {otpError}
-                            </Typography>
-                        )}
-                        <Typography variant="caption" color="text.secondary" align="center" display="block">
+                        {otpError && <Typography variant="caption" color="error" sx={{ mb: 1 }}>{otpError}</Typography>}
+                        <Typography variant="caption" color="text.secondary" align="center">
                             Enter the OTP code sent to your registered mobile number.
                         </Typography>
                     </Box>
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 3, justifyContent: 'center', gap: 2 }}>
                     <Button onClick={() => setOpenConfirm(false)} color="inherit" variant="outlined" sx={{ minWidth: 100 }}>Cancel</Button>
-                    <Button onClick={confirmTransfer} variant="contained" sx={{ minWidth: 100 }}>
-                        Confirm
+                    <Button onClick={confirmTransfer} variant="contained" sx={{ minWidth: 100, bgcolor: '#002147' }} disabled={processing}>
+                        {processing ? 'Submitting...' : 'Confirm'}
                     </Button>
                 </DialogActions>
-            </Dialog>
-
-            {/* Error Dialog */}
-            <Dialog open={openErrorDialog} onClose={() => setOpenErrorDialog(false)} PaperProps={{ sx: { borderRadius: 3, p: 1 } }}>
-                <Box sx={{ p: 2 }}>
-                    <Typography variant="h6" color="error" fontWeight="bold">Error</Typography>
-                    <Typography color="text.secondary" sx={{ mt: 1, mb: 3 }}>
-                        {error}
-                    </Typography>
-                    <Button fullWidth variant="contained" onClick={() => setOpenErrorDialog(false)} color="error">
-                        OK
-                    </Button>
-                </Box>
             </Dialog>
 
             {/* Success Dialog */}
-            <Dialog open={success} onClose={handleCloseSuccess} PaperProps={{ sx: { borderRadius: 3, p: 3, textAlign: 'center', minWidth: 320 } }}>
+            <Dialog open={success} onClose={() => navigate('/dashboard')} PaperProps={{ sx: { borderRadius: 3, p: 3, textAlign: 'center', minWidth: 320 } }}>
                 <Box sx={{ color: 'success.main', mb: 2 }}>
-                    <Box sx={{
-                        width: 60, height: 60, borderRadius: '50%', bgcolor: '#E6FCF5',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto'
-                    }}>
+                    <Box sx={{ width: 60, height: 60, borderRadius: '50%', bgcolor: '#E6FCF5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
                         <Typography variant="h4">✓</Typography>
                     </Box>
                 </Box>
-                <DialogTitle sx={{ color: 'text.primary', fontWeight: 700, fontSize: '1.5rem', p: 0, mb: 1 }}>Transfer Successful</DialogTitle>
-                <DialogContent sx={{ p: 0 }}>
-                    <DialogContentText sx={{ mb: 3 }}>
-                        Your transaction has been processed successfully.
-                    </DialogContentText>
-                    <Box sx={{ p: 2, bgcolor: '#F8F9FA', borderRadius: 2, mb: 1 }}>
-                        <Typography variant="caption" color="text.secondary" display="block">New Balance</Typography>
-                        <Typography variant="h6" fontWeight="bold" color="primary">PKR {(user.balance - parseFloat(amount)).toLocaleString()}</Typography>
-                    </Box>
-                </DialogContent>
-                <DialogActions sx={{ justifyContent: 'center', p: 0, mt: 3 }}>
-                    <Button onClick={handleCloseSuccess} variant="contained" color="success" size="large" fullWidth>
-                        Return to Dashboard
-                    </Button>
-                </DialogActions>
+                <DialogTitle sx={{ color: 'text.primary', fontWeight: 700, fontSize: '1.5rem', p: 0, mb: 1 }}>Submitted for Approval</DialogTitle>
+                <DialogContentText sx={{ mb: 3 }}>
+                    Your single transfer request has been submitted successfully and is now awaiting checker approval.
+                </DialogContentText>
+                <Button onClick={() => navigate('/dashboard')} variant="contained" color="success" size="large" fullWidth>Return to Dashboard</Button>
             </Dialog>
 
+            <Dialog open={openErrorDialog} onClose={() => setOpenErrorDialog(false)}>
+                <Box sx={{ p: 3 }}>
+                    <Typography variant="h6" color="error" fontWeight="bold">Error</Typography>
+                    <Typography color="text.secondary" sx={{ mt: 1, mb: 3 }}>{error}</Typography>
+                    <Button fullWidth variant="contained" onClick={() => setOpenErrorDialog(false)} color="error">OK</Button>
+                </Box>
+            </Dialog>
         </Container>
     );
 };

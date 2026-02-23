@@ -6,7 +6,7 @@ import {
     Button,
     Box,
     Table,
-    TableBody, 
+    TableBody,
     TableCell,
     TableContainer,
     TableHead,
@@ -18,7 +18,13 @@ import {
     DialogContentText,
     DialogActions,
     Fade,
-    Zoom
+    Zoom,
+    Grid,
+    FormControl,
+    Select,
+    MenuItem,
+    Link,
+    TextField
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -29,7 +35,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import DownloadIcon from '@mui/icons-material/Download';
 
-const BulkTransfer = ({ user, setUser, transactions, setTransactions }) => {
+const BulkTransfer = ({ user, setUser, transactions, setTransactions, pendingBatches, setPendingBatches }) => {
     const navigate = useNavigate();
     const fileInputRef = useRef(null);
 
@@ -48,6 +54,31 @@ const BulkTransfer = ({ user, setUser, transactions, setTransactions }) => {
     const [openAlert, setOpenAlert] = useState(false);
     const [alertMessage, setAlertMessage] = useState('');
 
+    // Pre-filled form state
+    const [customerName, setCustomerName] = useState('');
+    const [productName, setProductName] = useState('Internal Fund Transfer');
+    const [fileTemplate, setFileTemplate] = useState('Internal Transfer-Standard');
+    const [debitAccount, setDebitAccount] = useState('');
+    const [currentBalance, setCurrentBalance] = useState(0);
+
+    const maskAccountNumber = (acc) => {
+        if (!acc) return '';
+        return acc.substring(0, 4) + '**********' + acc.substring(acc.length - 4);
+    };
+
+    const handleAccountChange = (e) => {
+        const accNo = e.target.value;
+        setDebitAccount(accNo);
+        // "fetch the customer name which is me"
+        setCustomerName(user?.name || '');
+
+        // Find balance for the selected account
+        const selectedAcc = user?.accounts?.find(a => a.accountNumber === accNo);
+        if (selectedAcc) {
+            setCurrentBalance(selectedAcc.balance);
+        }
+    };
+
     const handleFileUpload = (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -60,23 +91,51 @@ const BulkTransfer = ({ user, setUser, transactions, setTransactions }) => {
             const wb = XLSX.read(bstr, { type: 'binary' });
             const wsname = wb.SheetNames[0];
             const ws = wb.Sheets[wsname];
+
+            // header: 1 returns data as an array of arrays
             const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
-            // Fix: Mapped indices based on user request (IBAN, Bank, Amount)
-            // Assuming Excel structure: Column A = IBAN, Column B = Bank Name, Column C = Amount
-            const parsedData = data.slice(1).map((row, index) => ({
-                id: index,
-                iban: row[0],
-                bankName: row[1], // Swapped from row[2] based on user feedback
-                amount: row[2],   // Swapped from row[1] based on user feedback
-                status: 'pending'
-            })).filter(row => row.iban && row.amount);
+            const isIBFT = productName === 'Inter Bank Fund Transfer';
+
+            const parsedData = data.slice(1).map((row, index) => {
+                if (!row || row.length === 0) return null;
+
+                if (isIBFT) {
+                    // IBFT Mapping based on your provided file
+                    return {
+                        // id: index,
+                        date: row[0],
+                        custRef: row[1],
+                        accountNumber: row[2],
+                        beneName: row[3],
+                        amount: row[4], // <--- Fixed: TRANSAMOUNT is at Index 4
+                        bank: row[5],
+                        bankCode: row[6],
+                        ref1: row[7],
+                        purpose: row[8],
+                        beneTitle: row[9],
+                        status: 'pending'
+                    };
+                } else {
+                    // IFT Mapping based on your provided file
+                    return {
+                        id: index,
+                        date: row[0],
+                        accountNumber: row[1],
+                        beneName: row[2],
+                        amount: row[3], // <--- Fixed: TRANSAMOUNT is at Index 3
+                        bankCode: row[4],
+                        custRef: row[5],
+                        bank: 'BOK',
+                        status: 'pending'
+                    };
+                }
+            }).filter(row => row !== null && row.accountNumber && row.amount);
 
             setLocalTransactions(parsedData);
         };
         reader.readAsBinaryString(file);
     };
-
     const handleProcessClick = () => {
         // Calculate total amount
         const totalAmount = localTransactions.reduce((sum, tx) => sum + parseFloat(tx.amount || 0), 0);
@@ -103,23 +162,24 @@ const BulkTransfer = ({ user, setUser, transactions, setTransactions }) => {
         const totalAmount = localTransactions.reduce((sum, tx) => sum + parseFloat(tx.amount || 0), 0);
 
         setTimeout(() => {
-            // 2. Update Global Balance
-            const newBalance = user.balance - totalAmount;
-            setUser({ ...user, balance: newBalance });
+            // Create a new batch for Checker approval
+            const newBatch = {
+                id: Date.now(),
+                maker: user.name,
+                makerId: user.userId,
+                timestamp: new Date().toLocaleString(),
+                totalAmount: totalAmount,
+                count: localTransactions.length,
+                customerName: customerName,
+                debitAccount: debitAccount,
+                productName: productName,
+                fileTemplate: fileTemplate,
+                fileName: fileName,
+                transactions: [...localTransactions],
+                status: 'Pending Approval'
+            };
 
-            // 3. Add to Global History
-            const newHistoryItems = localTransactions.map((tx, index) => ({
-                id: Date.now() + index,
-                date: new Date().toISOString().split('T')[0],
-                description: `Bulk Transfer to ${tx.bankName} (${tx.iban})`,
-                amount: -parseFloat(tx.amount),
-                type: 'debit'
-            }));
-            setTransactions([...transactions, ...newHistoryItems]);
-
-            // Update local statuses
-            setLocalTransactions(prev => prev.map(tx => ({ ...tx, status: 'Success' })));
-            setIsProcessed(true);
+            setPendingBatches([...pendingBatches, newBatch]);
 
             setProcessing(false);
             setOpenConfirm(false);
@@ -181,21 +241,132 @@ const BulkTransfer = ({ user, setUser, transactions, setTransactions }) => {
                 </Button>
             </Box>
 
-            <Paper sx={{ p: { xs: 3, md: 5 }, borderRadius: 4, mb: 4, minHeight: 400, display: 'flex', flexDirection: 'column', justifyContent: !localTransactions.length ? 'center' : 'flex-start' }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-                    <Box>
-                        <Typography variant="h4" gutterBottom fontWeight="bold">Bulk Fund Transfer</Typography>
-                        <Typography variant="subtitle1" color="text.secondary">Upload an Excel file to review and process multiple transfers.</Typography>
-                    </Box>
-                    <Box sx={{ textAlign: 'right' }}>
+            <Paper sx={{ p: { xs: 3, md: 5 }, borderRadius: 4, mb: 4, minHeight: 400 }}>
+                {/* New Form Top Section */}
+                <Grid container spacing={3} sx={{ mb: 4, alignItems: 'flex-start', width: '100%', }}>
+                    {/* Row 1: All inputs in one row */}
+                    <Grid item xs={12} sm={6} md={3} >
+                        <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                            Customer Name:
+                        </Typography>
+                        <TextField
+
+                            size="small"
+                            value={customerName}
+                            onChange={(e) => setCustomerName(e.target.value)}
+                            placeholder="Customer Name"
+                            sx={{ bgcolor: '#fff', borderRadius: 1 }}
+                        />
+                    </Grid>
+
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                            File Template:
+                        </Typography>
+                        <FormControl fullWidth size="small">
+                            <Select
+                                value={fileTemplate}
+                                onChange={(e) => setFileTemplate(e.target.value)}
+                                sx={{ bgcolor: '#fff', borderRadius: 1 }}
+                            >
+                                <MenuItem value="Internal Transfer-Standard">Internal Transfer-Standard</MenuItem>
+                                <MenuItem value="Inter Bank Fund Transfer-Standard">Inter Bank Fund Transfer-Standard</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Grid>
+
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                            Product Name:
+                        </Typography>
+                        <FormControl fullWidth size="small">
+                            <Select
+                                value={productName}
+                                onChange={(e) => setProductName(e.target.value)}
+                                sx={{ bgcolor: '#fff', borderRadius: 1 }}
+                            >
+                                <MenuItem value="Internal Fund Transfer">Internal Fund Transfer</MenuItem>
+                                <MenuItem value="Inter Bank Fund Transfer">Inter Bank Fund Transfer</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Grid>
+
+                    <Grid item xs={12} sm={6} md={3}>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                            Debit Account:
+                        </Typography>
+                        <FormControl fullWidth size="small">
+                            <Select
+                                value={debitAccount}
+                                onChange={handleAccountChange}
+                                displayEmpty
+                                sx={{ bgcolor: '#fff', borderRadius: 1 }}
+                            >
+                                <MenuItem value="" disabled>Select Account</MenuItem>
+                                {user?.accounts?.map((acc) => (
+                                    <MenuItem key={acc.accountNumber} value={acc.accountNumber}>
+                                        {maskAccountNumber(acc.accountNumber)}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                        <Box sx={{ minHeight: '20px' }}>
+                            <Link
+                                component="button"
+                                variant="caption"
+                                onClick={() => {
+                                    if (!debitAccount) {
+                                        setAlertMessage("Please select a debit account first.");
+                                    } else {
+                                        setAlertMessage(`Current Balance for ${debitAccount}: PKR ${currentBalance.toLocaleString()}`);
+                                    }
+                                    setOpenAlert(true);
+                                }}
+                                sx={{ mt: 0.5, display: 'block', textAlign: 'left', textDecoration: 'none', color: '#1976d2', fontWeight: 500 }}
+                            >
+                                Balance Check
+                            </Link>
+                        </Box>
+                    </Grid>
+
+
+                </Grid>
+                {/* Row 2: Upload Section Full Width */}
+                <Grid item xs={12} md={10} sx={{ mt: 1 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
+                        Upload File:
+                    </Typography>
+                    <Box sx={{
+                        border: '1px solid #ced4da',
+                        borderRadius: 1.5,
+                        display: 'flex',
+                        alignItems: 'center',
+                        overflow: 'hidden',
+                        bgcolor: '#fff',
+                        height: '42px'
+                    }}>
+                        <Box sx={{
+                            px: 2,
+                            color: 'text.secondary',
+                            flexGrow: 1,
+                            fontSize: '0.875rem'
+                        }}>
+                            {fileName || 'Upload File'}
+                        </Box>
                         <Button
                             variant="contained"
-                            size="large"
-                            startIcon={<CloudUploadIcon />}
                             onClick={() => fileInputRef.current.click()}
-                            sx={{ borderRadius: 3, px: 4, py: 1.5 }}
+                            sx={{
+                                borderRadius: 0,
+                                bgcolor: '#002147',
+                                '&:hover': { bgcolor: '#001a35' },
+                                boxShadow: 'none',
+                                textTransform: 'none',
+                                height: '100%',
+                                px: 4
+                            }}
                         >
-                            Upload Excel File
+                            Select File
                         </Button>
                         <input
                             type="file"
@@ -205,6 +376,11 @@ const BulkTransfer = ({ user, setUser, transactions, setTransactions }) => {
                             onChange={handleFileUpload}
                         />
                     </Box>
+                </Grid>
+                <Box sx={{ borderBottom: '1px solid #DEE2E6', mb: 3 }} />
+
+                <Box sx={{ mb: 2 }}>
+                    <Typography variant="h6" fontWeight="bold" sx={{ color: 'text.primary' }}>Recent Uploaded File(s)</Typography>
                 </Box>
 
                 {fileName && (
@@ -224,27 +400,29 @@ const BulkTransfer = ({ user, setUser, transactions, setTransactions }) => {
                                 <Table stickyHeader size="small">
                                     <TableHead>
                                         <TableRow>
-                                            <TableCell sx={{ fontWeight: 600, py: 2 }}>Bank</TableCell>
-                                            <TableCell sx={{ fontWeight: 600, py: 2 }}>IBAN / Account</TableCell>
-                                            <TableCell align="right" sx={{ fontWeight: 600, py: 2 }}>Amount</TableCell>
-                                            <TableCell align="center" sx={{ fontWeight: 600, py: 2 }}>Status</TableCell>
+                                            <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem', whiteSpace: 'nowrap' }}>Date</TableCell>
+                                            <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem', whiteSpace: 'nowrap' }}>Customer Ref</TableCell>
+                                            <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem', whiteSpace: 'nowrap' }}>Account Number</TableCell>
+                                            <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem', whiteSpace: 'nowrap' }}>Beneficiary Name</TableCell>
+                                            <TableCell align="right" sx={{ fontWeight: 600, fontSize: '0.75rem', whiteSpace: 'nowrap' }}>Amount</TableCell>
+                                            <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem', whiteSpace: 'nowrap' }}>Bank</TableCell>
+                                            <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem', whiteSpace: 'nowrap' }}>Bank Code</TableCell>
+                                            <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem', whiteSpace: 'nowrap' }}>Ref#1</TableCell>
+                                            <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem', whiteSpace: 'nowrap' }}>Purpose</TableCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
                                         {localTransactions.map((row) => (
                                             <TableRow key={row.id} hover>
-                                                <TableCell sx={{ fontWeight: 500 }}>{row.bankName}</TableCell>
-                                                <TableCell sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>{row.iban}</TableCell>
-                                                <TableCell align="right" sx={{ fontWeight: 600, color: 'text.primary' }}>{parseFloat(row.amount).toLocaleString()}</TableCell>
-                                                <TableCell align="center">
-                                                    <Chip
-                                                        label={row.status}
-                                                        size="small"
-                                                        color={row.status === 'Success' ? 'success' : 'default'}
-                                                        variant={row.status === 'Success' ? 'filled' : 'outlined'}
-                                                        sx={{ fontWeight: 600, textTransform: 'capitalize' }}
-                                                    />
-                                                </TableCell>
+                                                <TableCell sx={{ fontSize: '0.7rem' }}>{row.date}</TableCell>
+                                                <TableCell sx={{ fontSize: '0.7rem' }}>{row.custRef}</TableCell>
+                                                <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>{row.accountNumber}</TableCell>
+                                                <TableCell sx={{ fontWeight: 500, fontSize: '0.75rem' }}>{row.beneName}</TableCell>
+                                                <TableCell align="right" sx={{ fontWeight: 600, fontSize: '0.75rem' }}>{parseFloat(row.amount).toLocaleString()}</TableCell>
+                                                <TableCell sx={{ fontSize: '0.7rem' }}>{row.bank}</TableCell>
+                                                <TableCell sx={{ fontSize: '0.7rem' }}>{row.bankCode}</TableCell>
+                                                <TableCell sx={{ fontSize: '0.7rem' }}>{row.ref1 || '-'}</TableCell>
+                                                <TableCell sx={{ fontSize: '0.7rem' }}>{row.purpose || '-'}</TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
@@ -272,7 +450,7 @@ const BulkTransfer = ({ user, setUser, transactions, setTransactions }) => {
                                     disabled={processing}
                                     sx={{ minWidth: 240, py: 1.5, borderRadius: 3, fontWeight: 'bold' }}
                                 >
-                                    {processing ? 'Processing...' : isProcessed ? 'Done' : `Confirm & Process (${localTransactions.length})`}
+                                    {processing ? 'Processing...' : isProcessed ? 'Done' : `Process (${localTransactions.length})`}
                                 </Button>
                             </Box>
                         </Box>
@@ -280,9 +458,9 @@ const BulkTransfer = ({ user, setUser, transactions, setTransactions }) => {
                 )}
             </Paper>
 
-            {/* Confirmation & FPIN Dialog */}
+            {/* Process & FPIN Dialog */}
             <Dialog open={openConfirm} onClose={() => setOpenConfirm(false)} PaperProps={{ sx: { borderRadius: 3, p: 1, minWidth: { xs: 300, md: 400 } } }}>
-                <DialogTitle sx={{ fontWeight: 700, textAlign: 'center' }}>Confirm Bulk Transfer</DialogTitle>
+                <DialogTitle sx={{ fontWeight: 700, textAlign: 'center' }}>Process Bulk Transfer</DialogTitle>
                 <DialogContent>
                     <DialogContentText sx={{ textAlign: 'center', mb: 3 }}>
                         You are about to process <Box component="span" sx={{ fontWeight: 'bold', color: 'primary.main' }}>{localTransactions.length} transactions</Box><br />
@@ -314,7 +492,7 @@ const BulkTransfer = ({ user, setUser, transactions, setTransactions }) => {
                 <DialogActions sx={{ px: 3, pb: 3, justifyContent: 'center', gap: 2 }}>
                     <Button onClick={() => setOpenConfirm(false)} color="inherit" variant="outlined" sx={{ minWidth: 100 }}>Cancel</Button>
                     <Button onClick={confirmTransfer} variant="contained" sx={{ minWidth: 100 }} disabled={processing}>
-                        {processing ? 'Processing...' : 'Confirm'}
+                        {processing ? 'Processing...' : 'Process'}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -351,11 +529,9 @@ const BulkTransfer = ({ user, setUser, transactions, setTransactions }) => {
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions sx={{ justifyContent: 'center', p: 0, mt: 3, flexDirection: 'column', gap: 2 }}>
-                    <Button onClick={handleDownloadPDF} variant="outlined" color="primary" size="large" fullWidth startIcon={<DownloadIcon />}>
-                        Download Transaction Receipt
-                    </Button>
+            
                     <Button onClick={() => setSuccess(false)} variant="contained" color="success" size="large" fullWidth>
-                        View Status Table
+                       OK
                     </Button>
                 </DialogActions>
             </Dialog>

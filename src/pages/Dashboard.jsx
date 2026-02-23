@@ -5,8 +5,9 @@ import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import SendIcon from '@mui/icons-material/Send';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import ReceiptIcon from '@mui/icons-material/Receipt';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
-const Dashboard = ({ user, transactions }) => {
+const Dashboard = ({ user, transactions, pendingBatches = [] }) => {
     const navigate = useNavigate();
     const [openAlert, setOpenAlert] = useState(false);
 
@@ -22,7 +23,7 @@ const Dashboard = ({ user, transactions }) => {
                 </Box>
 
                 {/* Top Row: Balance & Actions */}
-                <Grow in={true} timeout={1000}>  
+                <Grow in={true} timeout={1000}>
                     <Paper sx={{ p: 3, mb: 4, borderRadius: 4, boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
                         <Grid container spacing={4} alignItems="center" justifyContent={"space-between"}>
                             {/* Balance Section */}
@@ -52,7 +53,7 @@ const Dashboard = ({ user, transactions }) => {
                             {/* Quick Actions Section */}
                             <Grid item xs={12} md={6.5} lg={7.5}>
                                 <Grid container spacing={2}>
-                                    <Grid item xs={6} sm={4}>
+                                    <Grid item xs={6} sm={3}>
                                         <Button
                                             fullWidth
                                             sx={{
@@ -77,7 +78,7 @@ const Dashboard = ({ user, transactions }) => {
                                             <Typography variant="subtitle2" fontWeight="600">Single Transfer</Typography>
                                         </Button>
                                     </Grid>
-                                    <Grid item xs={6} sm={4}>
+                                    <Grid item xs={6} sm={3}>
                                         <Button
                                             fullWidth
                                             sx={{
@@ -102,7 +103,45 @@ const Dashboard = ({ user, transactions }) => {
                                             <Typography variant="subtitle2" fontWeight="600">Bulk Transfer</Typography>
                                         </Button>
                                     </Grid>
-                                    <Grid item xs={12} sm={4}>
+                                    <Grid item xs={6} sm={3}>
+                                        <Button
+                                            fullWidth
+                                            sx={{
+                                                flexDirection: 'column',
+                                                gap: 1.5,
+                                                p: 2,
+                                                color: 'text.primary',
+                                                bgcolor: '#F8F9FA',
+                                                borderRadius: 3,
+                                                transition: 'all 0.2s',
+                                                position: 'relative',
+                                                '&:hover': {
+                                                    bgcolor: '#E3F2FD',
+                                                    transform: 'translateY(-2px)',
+                                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                                                }
+                                            }}
+                                            onClick={() => navigate('/transfer/approvals')}
+                                        >
+                                            {pendingBatches.length > 0 && (
+                                                <Box sx={{
+                                                    position: 'absolute',
+                                                    top: 10,
+                                                    right: 15,
+                                                    width: 10,
+                                                    height: 10,
+                                                    bgcolor: 'error.main',
+                                                    borderRadius: '50%',
+                                                    border: '2px solid white'
+                                                }} />
+                                            )}
+                                            <Box sx={{ p: 1, borderRadius: '50%', bgcolor: 'white', color: 'success.main', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                                                <CheckCircleIcon fontSize="small" />
+                                            </Box>
+                                            <Typography variant="subtitle2" fontWeight="600">Approvals</Typography>
+                                        </Button>
+                                    </Grid>
+                                    <Grid item xs={6} sm={3}>
                                         <Button
                                             fullWidth
                                             sx={{

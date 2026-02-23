@@ -6,7 +6,12 @@ export const users = [
         accountNumber: 'PK12BOKK12345678901234',
         balance: 500000,
         email: 'aroobakhan@innovarge.com',
-        otp: '123456'
+        otp: '123456',
+        accounts: [
+            { accountNumber: 'PK12BOKK12345678901234', balance: 500000, title: 'Current Account' },
+            { accountNumber: 'PK12BOKK00001111222233', balance: 250000, title: 'Savings Account' },
+            { accountNumber: 'PK12BOKK99998888777766', balance: 100000, title: 'Business Account' }
+        ]
     },
     {
         userId: 'tassawur',
@@ -15,7 +20,11 @@ export const users = [
         accountNumber: 'PK99BOKK98765432109876',
         balance: 10000000,
         email: 'tasawur@kuickpay.com',
-        otp: '123456'
+        otp: '123456',
+        accounts: [
+            { accountNumber: 'PK99BOKK98765432109876', balance: 10000000, title: 'Primary Account' },
+            { accountNumber: 'PK99BOKK11223344556677', balance: 500000, title: 'Backup Account' }
+        ]
     }
 ];
 

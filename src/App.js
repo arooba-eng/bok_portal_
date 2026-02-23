@@ -7,12 +7,14 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import SingleTransfer from './pages/SingleTransfer';
 import BulkTransfer from './pages/BulkTransfer';
+import BulkApproval from './pages/BulkApproval';
 import Layout from './components/Layout';
 import { initialTransactions } from './data/mockData';
 
 function App() {
     const [user, setUser] = useState(null);
     const [transactions, setTransactions] = useState(initialTransactions);
+    const [pendingBatches, setPendingBatches] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -48,15 +50,19 @@ function App() {
                     <Route element={user ? <Layout user={user} onLogout={handleLogout} /> : <Navigate to="/login" />}>
                         <Route
                             path="/dashboard"
-                            element={<Dashboard user={user} transactions={transactions} />}
+                            element={<Dashboard user={user} transactions={transactions} pendingBatches={pendingBatches} />}
                         />
                         <Route
                             path="/transfer/single"
-                            element={<SingleTransfer user={user} setUser={setUser} transactions={transactions} setTransactions={setTransactions} />}
+                            element={<SingleTransfer user={user} setUser={setUser} transactions={transactions} setTransactions={setTransactions} pendingBatches={pendingBatches} setPendingBatches={setPendingBatches} />}
                         />
                         <Route
                             path="/transfer/bulk"
-                            element={<BulkTransfer user={user} setUser={setUser} transactions={transactions} setTransactions={setTransactions} />}
+                            element={<BulkTransfer user={user} setUser={setUser} transactions={transactions} setTransactions={setTransactions} pendingBatches={pendingBatches} setPendingBatches={setPendingBatches} />}
+                        />
+                        <Route
+                            path="/transfer/approvals"
+                            element={<BulkApproval user={user} setUser={setUser} transactions={transactions} setTransactions={setTransactions} pendingBatches={pendingBatches} setPendingBatches={setPendingBatches} />}
                         />
                     </Route>
 
