@@ -199,17 +199,20 @@ const BulkTransfer = ({ user, setUser, transactions, setTransactions, pendingBat
 
         // Add Table
         const tableData = localTransactions.map(tx => [
-            tx.bankName,
-            tx.iban,
-            `PKR ${parseFloat(tx.amount).toLocaleString()}`,
-            tx.status.toUpperCase()
+            tx.date || '-',
+            tx.bank || 'BOK',
+            tx.accountNumber || '-',
+            tx.beneName || '-',
+            `PKR ${parseFloat(tx.amount || 0).toLocaleString()}`,
+            'PENDING APPROVAL'
         ]);
 
         autoTable(doc, {
             startY: 45,
-            head: [['Bank Name', 'IBAN / Account', 'Amount', 'Status']],
+            head: [['Date', 'Bank', 'Account Number', 'Beneficiary', 'Amount', 'Status']],
             body: tableData,
-            headStyles: { fillColor: [0, 51, 102] },
+            headStyles: { fillColor: [0, 31, 63], fontSize: 8 },
+            bodyStyles: { fontSize: 7 },
             theme: 'striped'
         });
 
@@ -526,9 +529,25 @@ const BulkTransfer = ({ user, setUser, transactions, setTransactions, pendingBat
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions sx={{ justifyContent: 'center', p: 0, mt: 3, flexDirection: 'column', gap: 2 }}>
-
-                    <Button onClick={() => setSuccess(false)} variant="contained" color="success" size="large" fullWidth>
-                        OK
+                    <Button
+                        onClick={handleDownloadPDF}
+                        variant="outlined"
+                        color="success"
+                        fullWidth
+                        startIcon={<DownloadIcon />}
+                        sx={{ borderRadius: 2, py: 1.5, fontWeight: 'bold' }}
+                    >
+                        Download Report (PDF)
+                    </Button>
+                    <Button
+                        onClick={() => setSuccess(false)}
+                        variant="contained"
+                        color="success"
+                        size="large"
+                        fullWidth
+                        sx={{ borderRadius: 2, py: 1.5, fontWeight: 'bold' }}
+                    >
+                        Return to Dashboard
                     </Button>
                 </DialogActions>
             </Dialog>

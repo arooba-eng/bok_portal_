@@ -20,6 +20,9 @@ import { useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { banks } from '../data/mockData';
 import PinInput from '../components/PinInput';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import DownloadIcon from '@mui/icons-material/Download';
 
 const SingleTransfer = ({ user, setUser, transactions, setTransactions, pendingBatches, setPendingBatches, balance = 0 }) => {
     const navigate = useNavigate();
@@ -186,6 +189,53 @@ const SingleTransfer = ({ user, setUser, transactions, setTransactions, pendingB
             setOpenConfirm(false);
             setSuccess(true);
         }, 1500);
+    };
+
+    const handleDownloadReceipt = () => {
+        const doc = new jsPDF();
+
+        // Header
+        doc.setFillColor(0, 33, 71); // BOK Dark Blue
+        doc.rect(0, 0, 210, 40, 'F');
+
+        doc.setFontSize(22);
+        doc.setTextColor(255, 255, 255);
+        doc.text('Bank of Khyber', 105, 20, { align: 'center' });
+        doc.setFontSize(12);
+        doc.text('Transaction Acknowledgement Receipt', 105, 30, { align: 'center' });
+
+        // Content
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(10);
+        doc.text(`Date: ${new Date().toLocaleString()}`, 14, 50);
+        doc.text(`Reference No: BOK-${Date.now()}`, 14, 55);
+
+        autoTable(doc, {
+            startY: 65,
+            head: [['Description', 'Details']],
+            body: [
+                ['Product', productName],
+                ['Debit Account', maskAccountNumber(debitAccount)],
+                ['Beneficiary Name', beneName],
+                ['Beneficiary Account', beneAccNo],
+                ['Bank', bankCode || 'BOK'],
+                ['Amount', `PKR ${parseFloat(amount || 0).toLocaleString()}`],
+                ['Status', 'Submitted for Approval'],
+                ['Transaction Date', transactionDate],
+                ['Purpose', purposeOfPayment]
+            ],
+            theme: 'grid',
+            headStyles: { fillColor: [0, 33, 71] },
+            columnStyles: { 0: { fontStyle: 'bold', width: 50 } }
+        });
+
+        doc.setFontSize(8);
+        doc.setTextColor(100);
+        const finalY = doc.lastAutoTable.finalY + 15;
+        doc.text('This is a computer-generated acknowledgement and does not require a signature.', 105, finalY, { align: 'center' });
+        doc.text('The transaction is subject to final approval by the authorized checker.', 105, finalY + 5, { align: 'center' });
+
+        doc.save(`BOK_Receipt_${beneName || 'Transfer'}.pdf`);
     };
 
     const handleReset = () => {
@@ -459,7 +509,28 @@ const SingleTransfer = ({ user, setUser, transactions, setTransactions, pendingB
                 <DialogContentText sx={{ mb: 3 }}>
                     Your single transfer request has been submitted successfully and is now awaiting checker approval.
                 </DialogContentText>
-                <Button onClick={() => navigate('/dashboard')} variant="contained" color="success" size="large" fullWidth>Return to Dashboard</Button>
+                <DialogActions sx={{ justifyContent: 'center', p: 0, mt: 3, flexDirection: 'column', gap: 2 }}>
+                    <Button
+                        onClick={handleDownloadReceipt}
+                        variant="outlined"
+                        color="success"
+                        fullWidth
+                        startIcon={<DownloadIcon />}
+                        sx={{ borderRadius: 2, py: 1.5, fontWeight: 'bold' }}
+                    >
+                        Download Receipt (PDF)
+                    </Button>
+                    <Button
+                        onClick={() => navigate('/dashboard')}
+                        variant="contained"
+                        color="success"
+                        size="large"
+                        fullWidth
+                        sx={{ borderRadius: 2, py: 1.5, fontWeight: 'bold' }}
+                    >
+                        Return to Dashboard
+                    </Button>
+                </DialogActions>
             </Dialog>
 
             <Dialog open={openErrorDialog} onClose={() => setOpenErrorDialog(false)}>

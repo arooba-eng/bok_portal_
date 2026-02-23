@@ -6,10 +6,56 @@ import SendIcon from '@mui/icons-material/Send';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import DownloadIcon from '@mui/icons-material/Download';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const Dashboard = ({ user, transactions, pendingBatches = [], balance = 0 }) => {
     const navigate = useNavigate();
     const [openAlert, setOpenAlert] = useState(false);
+
+    const handleDownloadReceipt = (tx) => {
+        const doc = new jsPDF();
+
+        // Header
+        doc.setFillColor(0, 33, 71); // BOK Dark Blue
+        doc.rect(0, 0, 210, 40, 'F');
+
+        doc.setFontSize(22);
+        doc.setTextColor(255, 255, 255);
+        doc.text('Bank of Khyber', 105, 20, { align: 'center' });
+        doc.setFontSize(12);
+        doc.text('Transaction Receipt', 105, 30, { align: 'center' });
+
+        // Content
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(10);
+        doc.text(`Date: ${tx.date}`, 14, 50);
+        doc.text(`Transaction ID: BOK-${tx.id || Math.floor(Math.random() * 1000000)}`, 14, 55);
+
+        autoTable(doc, {
+            startY: 65,
+            head: [['Description', 'Details']],
+            body: [
+                ['Transaction Type', tx.type === 'debit' ? 'Debit' : 'Credit'],
+                ['Description', tx.description],
+                ['Account Number', user.accountNumber],
+                ['Amount', `PKR ${Math.abs(tx.amount).toLocaleString()}`],
+                ['Status', 'Completed'],
+                ['Reference', tx.reference || '-']
+            ],
+            theme: 'grid',
+            headStyles: { fillColor: [0, 33, 71] },
+            columnStyles: { 0: { fontStyle: 'bold', width: 50 } }
+        });
+
+        doc.setFontSize(8);
+        doc.setTextColor(100);
+        const finalY = doc.lastAutoTable.finalY + 15;
+        doc.text('This is a computer-generated receipt and does not require a signature.', 105, finalY, { align: 'center' });
+
+        doc.save(`BOK_Receipt_${tx.id}.pdf`);
+    };
 
     return (
         <Fade in={true} timeout={800}>
@@ -271,10 +317,17 @@ const Dashboard = ({ user, transactions, pendingBatches = [], balance = 0 }) => 
                                             <Typography variant="caption" color="text.secondary">{tx.date}</Typography>
                                         </Box>
                                     </Box>
-                                    <Box sx={{ textAlign: 'right' }}>
+                                    <Box sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 2 }}>
                                         <Typography variant="body1" fontWeight="bold" color={tx.type === 'debit' ? 'text.primary' : 'success.main'} sx={{ fontSize: '0.95rem' }}>
                                             {tx.type === 'debit' ? '-' : '+'} PKR {Math.abs(tx.amount).toLocaleString()}
                                         </Typography>
+                                        <Button
+                                            size="small"
+                                            onClick={() => handleDownloadReceipt(tx)}
+                                            sx={{ minWidth: 0, p: 0.5, color: 'text.secondary', '&:hover': { color: 'primary.main', bgcolor: 'transparent' } }}
+                                        >
+                                            <DownloadIcon fontSize="small" />
+                                        </Button>
                                     </Box>
                                 </Box>
                                 {index < transactions.length - 1 && <Divider />}
