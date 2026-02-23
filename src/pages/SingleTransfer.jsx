@@ -76,6 +76,12 @@ const SingleTransfer = ({ user, setUser, transactions, setTransactions, pendingB
             return;
         }
 
+        if (productName === 'INTER BANK FUNDS TRANSFER' && !bankCode) {
+            setError('Please select a bank for IBFT verification.');
+            setOpenErrorDialog(true);
+            return;
+        }
+
         setVerifying(true);
         // Simulate API call to verify account
         setTimeout(() => {
@@ -92,8 +98,20 @@ const SingleTransfer = ({ user, setUser, transactions, setTransactions, pendingB
                     setOpenErrorDialog(true);
                     setBeneAccountTitle('');
                 }
-            } else {
+            } else if (productName === 'INTER BANK FUNDS TRANSFER') {
                 // IBFT Simulation
+                // In a real scenario, this would call a 1-Link/PayPak API
+                if (beneAccNo.length >= 8) {
+                    const mockNames = ['Zeeshan Khan', 'Ayesha Bibi', 'Muhammad Usman', 'Fatima Zahra'];
+                    const randomName = mockNames[Math.floor(Math.random() * mockNames.length)];
+                    setBeneAccountTitle(randomName);
+                    setBeneName(randomName);
+                } else {
+                    setError('Invalid Account Number format for IBFT.');
+                    setOpenErrorDialog(true);
+                    setBeneAccountTitle('');
+                }
+            } else {
                 const simulatedTitle = beneName ? beneName.toUpperCase() : 'EXTERNAL CUSTOMER';
                 setBeneAccountTitle('VERIFIED: ' + simulatedTitle);
             }
@@ -219,8 +237,8 @@ const SingleTransfer = ({ user, setUser, transactions, setTransactions, pendingB
                     <Grid item xs={12} md={6}>
                         <FormLabel>Product Name</FormLabel>
                         <FormControl fullWidth size="small">
-                            <Select value={productName}      displayEmpty  onChange={handleProductChange} sx={{ bgcolor: '#fff' }}>
-                                                                <MenuItem value="" disabled>Select Account</MenuItem>
+                            <Select value={productName} displayEmpty onChange={handleProductChange} sx={{ bgcolor: '#fff' }}>
+                                <MenuItem value="" disabled>Select Account</MenuItem>
 
                                 <MenuItem value="INTERNAL FUNDS TRANSFER">INTERNAL FUNDS TRANSFER</MenuItem>
                                 <MenuItem value="INTER BANK FUNDS TRANSFER">INTER BANK FUNDS TRANSFER</MenuItem>
@@ -300,7 +318,7 @@ const SingleTransfer = ({ user, setUser, transactions, setTransactions, pendingB
                                 <Button
                                     variant="contained"
                                     size="small"
-                                    sx={{ bgcolor: '#002147', textTransform: 'none', px: 3,height:40 }}
+                                    sx={{ bgcolor: '#002147', textTransform: 'none', px: 3, height: 40 }}
                                     onClick={handleVerifyAccount}
                                     disabled={verifying}
                                 >
@@ -329,8 +347,8 @@ const SingleTransfer = ({ user, setUser, transactions, setTransactions, pendingB
                                 placeholder="1 to 100 characters"
                             />
                         </Grid>
-                       
-                       
+
+
                         <Grid item xs={12} md={6}>
                             <FormLabel>BANK CODE</FormLabel>
                             <TextField
@@ -341,7 +359,7 @@ const SingleTransfer = ({ user, setUser, transactions, setTransactions, pendingB
                                 onChange={(e) => setBankCode(e.target.value)}
                                 disabled={productName === 'INTERNAL FUNDS TRANSFER'}
                             >
-                                                                <MenuItem value="" disabled>Select Bank</MenuItem>
+                                <MenuItem value="" disabled>Select Bank</MenuItem>
 
                                 {banks.map((option) => (
                                     <MenuItem key={option.code} value={option.code}>

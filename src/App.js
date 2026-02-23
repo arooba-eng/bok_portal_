@@ -8,11 +8,14 @@ import Dashboard from './pages/Dashboard';
 import SingleTransfer from './pages/SingleTransfer';
 import BulkTransfer from './pages/BulkTransfer';
 import BulkApproval from './pages/BulkApproval';
+import CorporateManagement from './pages/CorporateManagement';
 import Layout from './components/Layout';
-import { initialTransactions } from './data/mockData';
+import { initialTransactions, users as initialUsers, initialInstitutions } from './data/mockData';
 
 function App() {
     const [user, setUser] = useState(null);
+    const [users, setUsers] = useState(initialUsers);
+    const [institutions, setInstitutions] = useState(initialInstitutions);
     const [transactions, setTransactions] = useState(initialTransactions);
     const [pendingBatches, setPendingBatches] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -25,9 +28,14 @@ function App() {
         setLoading(false);
     }, []);
 
-    const handleLogin = (userData) => {
-        setUser(userData);
-        localStorage.setItem('user', JSON.stringify(userData));
+    const handleLogin = (credentials) => {
+        const foundUser = users.find(u => u.userId === credentials.userId && u.password === credentials.password);
+        if (foundUser) {
+            setUser(foundUser);
+            localStorage.setItem('user', JSON.stringify(foundUser));
+            return true;
+        }
+        return false;
     };
 
     const handleLogout = () => {
@@ -44,10 +52,13 @@ function App() {
             <CssBaseline />
             <Router>
                 <Routes>
-                    <Route path="/login" element={!user ? <Login onLogin={handleLogin} /> : <Navigate to="/dashboard" />} />
+                    <Route
+                        path="/login"
+                        element={!user ? <Login onLogin={handleLogin} /> : (user.role === 'admin' ? <Navigate to="/admin/corporate-management" /> : <Navigate to="/dashboard" />)}
+                    />
 
-                    {/* Protected Routes wrapped in Layout */}
-                    <Route element={user ? <Layout user={user} onLogout={handleLogout} /> : <Navigate to="/login" />}>
+                    {/* Protected User Routes */}
+                    <Route element={user && user.role === 'user' ? <Layout user={user} onLogout={handleLogout} /> : <Navigate to="/login" />}>
                         <Route
                             path="/dashboard"
                             element={<Dashboard user={user} transactions={transactions} pendingBatches={pendingBatches} />}
@@ -63,6 +74,21 @@ function App() {
                         <Route
                             path="/transfer/approvals"
                             element={<BulkApproval user={user} setUser={setUser} transactions={transactions} setTransactions={setTransactions} pendingBatches={pendingBatches} setPendingBatches={setPendingBatches} />}
+                        />
+                    </Route>
+
+                    {/* Protected Admin Routes */}
+                    <Route element={user && user.role === 'admin' ? <Layout user={user} onLogout={handleLogout} /> : <Navigate to="/login" />}>
+                        <Route
+                            path="/admin/corporate-management"
+                            element={
+                                <CorporateManagement
+                                    institutions={institutions}
+                                    setInstitutions={setInstitutions}
+                                    users={users}
+                                    setUsers={setUsers}
+                                />
+                            }
                         />
                     </Route>
 

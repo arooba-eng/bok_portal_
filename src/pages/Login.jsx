@@ -10,37 +10,34 @@ const Login = ({ onLogin }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const user = users.find(
-      (u) => u.userId === userId && u.password === password
-    );
-    if (user) {
-      setError('');
-      onLogin(user);
-    } else {
+    const success = onLogin({ userId, password });
+    if (!success) {
       setError('Invalid User ID or Password');
+    } else {
+      setError('');
     }
   };
 
   return (
     <Grid item sx={{ minHeight: '100vh' }}>
       {/* Left Side */}
-      <Grid item  xs={12} md={6} sx={{display: 'flex',justifyContent: 'space-between',minHeight: '100vh'  }}>
-      <Grid item   xs={0}      // hide on xs
-       // half width on medium
-    lg={6}      // half width on large
-    sx={{
-      display: { xs: 'none', sm: 'none', md: 'flex' }, // hide on small, show on md+
-      bgcolor: 'primary.main',
-      color: 'white',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      p: 6,
-      width:"50%",
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
-        <Box
+      <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: 'space-between', minHeight: '100vh' }}>
+        <Grid item xs={0}      // hide on xs
+          // half width on medium
+          lg={6}      // half width on large
+          sx={{
+            display: { xs: 'none', sm: 'none', md: 'flex' }, // hide on small, show on md+
+            bgcolor: 'primary.main',
+            color: 'white',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            p: 6,
+            width: "50%",
+            position: 'relative',
+            overflow: 'hidden',
+          }}>
+          <Box
             sx={{
               position: 'absolute',
               top: -100,
@@ -82,32 +79,32 @@ const Login = ({ onLogin }) => {
 
           <Typography
             variant="h6"
-            sx={{ opacity: 0.9, textAlign: 'center' ,color:"white" }}
+            sx={{ opacity: 0.9, textAlign: 'center', color: "white" }}
           >
             Experience secure and seamless banking with The Bank of Khyber.
           </Typography>
 
-      </Grid>
-          <Grid   item
-    xs={12}    // full width on xs
-      // half width on md
-    lg={6}     // half width on lg
-    sx={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      bgcolor: 'background.default',
-      width:{lg:'50%'}
-    }}>
-     <Container >
+        </Grid>
+        <Grid item
+          xs={12}    // full width on xs
+          // half width on md
+          lg={6}     // half width on lg
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            bgcolor: 'background.default',
+            width: { lg: '50%' }
+          }}>
+          <Container >
             <Paper
               elevation={0}
               sx={{
                 p: 5,
                 borderRadius: 4,
                 boxShadow: '0px 8px 40px rgba(0,0,0,0.05)',
-                      justifyContent: 'center',
-                      margin:{lg:8},
+                justifyContent: 'center',
+                margin: { lg: 8 },
               }}
             >
 
@@ -164,12 +161,12 @@ const Login = ({ onLogin }) => {
                   onChange={(e) => setPassword(e.target.value)}
                 />
 
-               
-                                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1, mb: 3 }}>
-                                    <Link href="#" variant="body2" underline="hover" color="secondary.main">
-                                        Forgot Password?
-                                    </Link>
-                                </Box>
+
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 1, mb: 3 }}>
+                  <Link href="#" variant="body2" underline="hover" color="secondary.main">
+                    Forgot Password?
+                  </Link>
+                </Box>
 
                 <Button
                   fullWidth
@@ -189,11 +186,11 @@ const Login = ({ onLogin }) => {
             </Box>
           </Container>
 
-      </Grid>
+        </Grid>
       </Grid>
 
       {/* Right Side */}
-     
+
     </Grid>
   );
 };

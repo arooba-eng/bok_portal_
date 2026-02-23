@@ -12,7 +12,7 @@ const Header = ({ user, onLogout }) => {
                 {/* Logo Section */}
                 <Box
                     sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer', flexGrow: 1 }}
-                    onClick={() => navigate('/dashboard')}
+                    onClick={() => navigate(user.role === 'admin' ? '/admin/corporate-management' : '/dashboard')}
                 >
                     <Box
                         component="img"

@@ -28,7 +28,6 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import * as XLSX from 'xlsx';
 import PinInput from '../components/PinInput';
 import jsPDF from 'jspdf';
@@ -149,6 +148,7 @@ const BulkTransfer = ({ user, setUser, transactions, setTransactions, pendingBat
         setOtpInput('');
         setOtpError('');
         setOpenConfirm(true);
+        setIsProcessed(true)
     };
 
     const confirmTransfer = () => {
