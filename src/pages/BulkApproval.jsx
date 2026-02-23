@@ -351,7 +351,7 @@ const BulkApproval = ({ user, setUser, transactions, setTransactions, pendingBat
                     </MenuItem>
                     <MenuItem onClick={() => handleAction('repair')} sx={{ color: 'info.main' }}>
                         <ListItemIcon><BuildOutlinedIcon fontSize="small" color="info" /></ListItemIcon>
-                        <ListItemText primary="Repair" />
+                        <ListItemText primary="Edit" />
                     </MenuItem>
                     <MenuItem onClick={() => handleAction('reject')} sx={{ color: 'error.main' }}>
                         <ListItemIcon><CancelOutlinedIcon fontSize="small" color="error" /></ListItemIcon>
@@ -421,7 +421,7 @@ const BulkApproval = ({ user, setUser, transactions, setTransactions, pendingBat
 
             {/* Repair Modal (Edit Batch) */}
             < Dialog open={repairDialogOpen} onClose={() => setRepairDialogOpen(false)} maxWidth="md" fullWidth >
-                <DialogTitle sx={{ fontWeight: 'bold' }}>Repair Batch: {selectedBatch?.fileName}</DialogTitle>
+                <DialogTitle sx={{ fontWeight: 'bold' }}>Edit Batch: {selectedBatch?.fileName}</DialogTitle>
                 <DialogContent>
                     <Alert severity="info" sx={{ mb: 3 }}>Edit transaction details below to correct any errors.</Alert>
 
