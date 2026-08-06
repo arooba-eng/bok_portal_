@@ -190,7 +190,7 @@ const BulkTransfer = ({ user, setUser, transactions, setTransactions, pendingBat
         // Add Header
         doc.setFontSize(18);
         doc.setTextColor(0, 51, 102); // BOK Blue
-        doc.text('Bank of Khyber - Bulk Transfer Report', 14, 20);
+        doc.text('First Women Bank - Bulk Transfer Report', 14, 20);
 
         doc.setFontSize(11);
         doc.setTextColor(100);

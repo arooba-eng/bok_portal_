@@ -80,7 +80,7 @@ const Login = ({ onLogin }) => {
             variant="h6"
             sx={{ opacity: 0.9, textAlign: 'center', color: "white" }}
           >
-            Experience secure and seamless banking with The Bank of Khyber.
+            Experience secure and seamless banking with The First Women Bank.
           </Typography>
 
         </Grid>
@@ -180,7 +180,7 @@ const Login = ({ onLogin }) => {
 
             <Box sx={{ mt: 4, textAlign: 'center' }}>
               <Typography variant="caption" color="text.secondary">
-                © 2026 The Bank of Khyber. All rights reserved.
+                © 2026 First Women Bank. All rights reserved.
               </Typography>
             </Box>
           </Container>

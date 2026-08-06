@@ -200,7 +200,7 @@ const SingleTransfer = ({ user, setUser, transactions, setTransactions, pendingB
 
         doc.setFontSize(22);
         doc.setTextColor(255, 255, 255);
-        doc.text('Bank of Khyber', 105, 20, { align: 'center' });
+        doc.text('First Women Bank', 105, 20, { align: 'center' });
         doc.setFontSize(12);
         doc.text('Transaction Acknowledgement Receipt', 105, 30, { align: 'center' });
 
