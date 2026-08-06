@@ -72,7 +72,7 @@ const Login = ({ onLogin }) => {
             }}
           />
 
-          <Typography variant="h3" fontWeight={800} gutterBottom>
+          <Typography variant="h3" fontWeight={800} gutterBottom color="white" sx={{ textAlign: 'center' }}>
             Internet Banking
           </Typography>
 
