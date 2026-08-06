@@ -16,9 +16,9 @@ const Header = ({ user, onLogout }) => {
                 >
                     <Box
                         component="img"
-                        src="/BOK_Horizontal.png"
+                        src="/FirstWomen.jpg"
                         alt="Bank of Khyber"
-                        sx={{ height: { xs: 40, md: 40 }, mr: 2 }}
+                        sx={{ height: { xs: 50, md: 50 }, mr: 2 }}
                     />
                 </Box>
 

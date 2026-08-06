@@ -62,7 +62,7 @@ const Login = ({ onLogin }) => {
 
           <Box
             component="img"
-            src="/bok_logo.jpg"
+            src="/FirstWomen.jpg"
             sx={{
               width: 180,
               mb: 4,
@@ -117,7 +117,7 @@ const Login = ({ onLogin }) => {
               >
                 <Box
                   component="img"
-                  src="/bok_logo.jpg"
+                  src="/FirstWomen.jpg"
                   sx={{ width: 140 }}
                 />
               </Box>
