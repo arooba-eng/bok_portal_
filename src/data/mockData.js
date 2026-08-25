@@ -14,6 +14,21 @@ export const users = [
             { accountNumber: 'PK12BOKK00001111222233', title: 'Payroll Account' }
         ]
     },
+     {
+        userId: 'Raza',
+        password: '123456',
+        name: 'Raza',
+        role: 'user',
+        hierarchy: 'Maker',
+        institutionId: 'INST001',
+        accountNumber: 'PK12BOKK12345678905434',
+        email: 'raza@gmail.com',
+        otp: '123456',
+        accounts: [
+            { accountNumber: 'PK12BOKK12345678905434', title: 'Corporate Current Account' },
+            { accountNumber: 'PK12BOKK00001111222233', title: 'Payroll Account' }
+        ]
+    },
     {
         userId: 'tassawur',
         password: '123456',
@@ -26,6 +41,20 @@ export const users = [
         otp: '123456',
         accounts: [
             { accountNumber: 'PK12BOKK12345678901234', title: 'Corporate Current Account' }
+        ]
+    },
+      {
+        userId: 'Faisal',
+        password: '123456',
+        name: 'Faisl',
+        role: 'user',
+        hierarchy: 'Checker/Approver',
+        institutionId: 'INST001',
+        accountNumber: 'PK12BOKK12345678900984',
+        email: 'faisal@gmail.com',
+        otp: '123456',
+        accounts: [
+            { accountNumber: 'PK12BOKK12345678900984', title: 'Corporate Current Account' }
         ]
     },
     {
